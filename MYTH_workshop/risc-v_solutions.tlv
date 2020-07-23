@@ -118,7 +118,6 @@ m4+definitions(['
       m4_lab(1, ['Register File Read
       m4_define(['m4_regfileio_style'], 2)
       '])
-      m4_lab(1, ['
       m4_lab(1, ['ALU
       m4_define(['m4_alu_stage'], @1)
       '])
