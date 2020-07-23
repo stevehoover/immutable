@@ -175,6 +175,7 @@ m4+definitions(['
          $opcode[6:0]    = $instr[6:0];
       '])
       m4_ifelse_block(m4_regfileio_style, 1, ['
+      @1
          // $rf_wr_en            = '0;
          // $rf_wr_index[4:0]    = '0;
          // $rf_wr_data[31:0]    = '0;
@@ -183,6 +184,7 @@ m4+definitions(['
          $rf_rd_index1[4:0]   = '0;
          $rf_rd_index2[4:0]   = '0;
       '], m4_regfile_io_style, 2, ['
+      @1
          // $rf_wr_en            = '0;
          // $rf_wr_index[4:0]    = '0;
          // $rf_wr_data[31:0]    = '0;
@@ -190,9 +192,9 @@ m4+definitions(['
          $rd_rd_en2           = $rs2_valid;
          $rf_rd_index1[4:0]   = $rs1;
          $rf_rd_index2[4:0]   = $rs2;
-         m4+rf(@1, @1)
          $src1_value[31:0]    = $rf_rd_data1;
          $src2_value[31:0]    = $rf_rd_data2;
+      m4+rf(@1, @1)
       '])
       // m4_ifelse_block(m4_rf_stage, [''] , [''], ['
       // m4_rf_stage
