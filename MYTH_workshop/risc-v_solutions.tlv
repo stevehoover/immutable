@@ -183,7 +183,7 @@ m4+definitions(['
          $rd_rd_en2           = '0;
          $rf_rd_index1[4:0]   = '0;
          $rf_rd_index2[4:0]   = '0;
-      '], m4_regfile_io_style, 2, ['
+      '], m4_regfileio_style, 2, ['
       @1
          // $rf_wr_en            = '0;
          // $rf_wr_index[4:0]    = '0;
