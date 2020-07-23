@@ -203,36 +203,36 @@ m4+definitions(['
       //       $rs2_value[31:0] =   (>>1$rd == $rs2) && /xreg[>>1$rd]>>1$wr ? >>1$result :
       //                            /xreg[$rs2]>>1$value;
       // '])
-      m4_ifelse_block(m4_alu_stage, [''], [''], ['
-      m4_alu_stage
-         $result[31:0] =   $is_addi ?  $rs1_value + $imm :
-                           $is_add  ?  $rs1_value + $rs2_value :
-                                       32'bx;
-      '])
-      m4_ifelse_block(m4_wr_stage, [''], [''], m4_wr_stage, ['-'], ['
-         /xreg[31:0]
-            $value[31:0] = #xreg;
-      '], ['
-      m4_wr_stage
-         /xreg[31:0]
-            $wr = |cpu$rd_valid && (|cpu$rd != 5'b0) && (#xreg == |cpu$rd);
-            $value[31:0] = *reset ? 32'b0 :
-                           $wr    ? |cpu$result :
-                                    >>1$value;
-      '])
-      m4_ifelse_block(m4_br_stage, [''], [''], ['
-      @1
-         $taken_br = ($is_beq && ($rs1_value == $rs2_value)) ||
-                     ($is_bne && ($rs1_value != $rs2_value)) ||
-                     ($is_blt && (($rs1_value < $rs2_value)  ^ ($rs1_value[31] != $rs2_value[31]))) ||
-                     ($is_bge && (($rs1_value >= $rs2_value) ^ ($rs1_value[31] != $rs2_value[31]))) ||
-                     ($is_bltu && ($rs1_value < $rs2_value)) ||
-                     ($is_bgeu && ($rs1_value >= $rs2_value));
-      '])
-      m4_ifelse_block(m4_tb_stage, [''], [''], ['
-      m4_tb_stage
-         *passed = |cpu/xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
-      '])
+      // m4_ifelse_block(m4_alu_stage, [''], [''], ['
+      // m4_alu_stage
+      //    $result[31:0] =   $is_addi ?  $rs1_value + $imm :
+      //                      $is_add  ?  $rs1_value + $rs2_value :
+      //                                  32'bx;
+      // '])
+      // m4_ifelse_block(m4_wr_stage, [''], [''], m4_wr_stage, ['-'], ['
+      //    /xreg[31:0]
+      //       $value[31:0] = #xreg;
+      // '], ['
+      // m4_wr_stage
+      //    /xreg[31:0]
+      //       $wr = |cpu$rd_valid && (|cpu$rd != 5'b0) && (#xreg == |cpu$rd);
+      //       $value[31:0] = *reset ? 32'b0 :
+      //                      $wr    ? |cpu$result :
+      //                               >>1$value;
+      // '])
+      // m4_ifelse_block(m4_br_stage, [''], [''], ['
+      // @1
+      //    $taken_br = ($is_beq && ($rs1_value == $rs2_value)) ||
+      //                ($is_bne && ($rs1_value != $rs2_value)) ||
+      //                ($is_blt && (($rs1_value < $rs2_value)  ^ ($rs1_value[31] != $rs2_value[31]))) ||
+      //                ($is_bge && (($rs1_value >= $rs2_value) ^ ($rs1_value[31] != $rs2_value[31]))) ||
+      //                ($is_bltu && ($rs1_value < $rs2_value)) ||
+      //                ($is_bgeu && ($rs1_value >= $rs2_value));
+      // '])
+      // m4_ifelse_block(m4_tb_stage, [''], [''], ['
+      // m4_tb_stage
+      //    *passed = |cpu/xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
+      // '])
    
    // ============================================================================================================
    
