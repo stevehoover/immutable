@@ -10,7 +10,7 @@ m4+definitions(['
 
 '])
 \TLV hidden_solution(_slide_num)
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/ad5a30fc79f5362e78f961aeba63c6d5ea27a752/tlv_lib/risc-v_shell_lib.tlv'])
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/shivam/tlv_lib/risc-v_shell_lib.tlv'])
 
    // /====================\
    // | Sum 1 to 9 Program |
