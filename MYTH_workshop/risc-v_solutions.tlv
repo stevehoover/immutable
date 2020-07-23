@@ -9,7 +9,7 @@ m4+definitions(['
       
 
 '])
-\TLV main(_slide_num)
+\TLV hidden_solution(_slide_num)
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/ad5a30fc79f5362e78f961aeba63c6d5ea27a752/tlv_lib/risc-v_shell_lib.tlv'])
 
    // /====================\
