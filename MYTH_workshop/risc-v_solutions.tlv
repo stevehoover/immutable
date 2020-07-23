@@ -53,7 +53,7 @@ m4+definitions(['
       
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
-      m4_lab(52, ['Next PC
+      m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
       m4_lab(1, ['Fetch
@@ -80,7 +80,7 @@ m4+definitions(['
       '])
       m4_lab(1, ['Instruction Immediate Decode
       @1
-         $imm[31:0] =   $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
+         $imm[31:0]  =  $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
                         $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:7]} :
                         $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
                         $is_u_instr ? {$instr[31:12], 12'b0} :
@@ -112,9 +112,13 @@ m4+definitions(['
          $is_add  = $funct3_opcode == 10'b000_0110011;
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
       '])
-      m4_lab(2, ['Register File Read
-      m4_define(['m4_rf_stage'], -)
+      m4_lab(2, ['Register File Inputs
+      m4_define(['m4_regfileio_style'], 1)
       '])
+      m4_lab(1, ['Register File Read
+      m4_define(['m4_regfileio_style'], 2)
+      '])
+      m4_lab(1, ['
       m4_lab(1, ['ALU
       m4_define(['m4_alu_stage'], @1)
       '])
@@ -138,8 +142,9 @@ m4+definitions(['
       // Logic that changes throughout.
       m4_ifelse_block(m4_pc_style, 1, ['
       @0
-         // PC update
-         $pc[31:0] = $reset ? '0 : >>1$pc + 32'd4;
+         // Lab : Next PC (6)
+         $pc[31:0]  =   $reset ? 32'b0 : 
+                        >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
       @0
          $pc[31:0] = $reset       ? '0 :
@@ -170,15 +175,35 @@ m4+definitions(['
             $rd[4:0]     = $instr[11:7];
          $opcode[6:0]    = $instr[6:0];
       '])
-      m4_ifelse_block(m4_rf_stage, [''] , [''], ['
-      m4_rf_stage
-         ?$rs1_valid
-            $rs1_value[31:0] =   (>>1$rd == $rs1) && /xreg[>>1$rd]>>1$wr ? >>1$result :
-                                 /xreg[$rs1]>>1$value;
-         ?$rs2_valid
-            $rs2_value[31:0] =   (>>1$rd == $rs2) && /xreg[>>1$rd]>>1$wr ? >>1$result :
-                                 /xreg[$rs2]>>1$value;
+      m4_ifelse_block(m4_regfileio_style, 1, ['
+         // $rf_wr_en            = '0;
+         // $rf_wr_index[4:0]    = '0;
+         // $rf_wr_data[31:0]    = '0;
+         $rf_rd_en1           = '0;
+         $rd_rd_en2           = '0;
+         $rf_rd_index1[4:0]   = '0;
+         $rf_rd_index2[4:0]   = '0;
+      '], m4_regfile_io_style, 2, ['
+         // $rf_wr_en            = '0;
+         // $rf_wr_index[4:0]    = '0;
+         // $rf_wr_data[31:0]    = '0;
+         $rf_rd_en1           = $rs1_valid;
+         $rd_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         m4+rf(@1, @1)
+         $src1_value[31:0]    = $rf_rd_data1;
+         $src2_value[31:0]    = $rf_rd_data2;
       '])
+      // m4_ifelse_block(m4_rf_stage, [''] , [''], ['
+      // m4_rf_stage
+      //    ?$rs1_valid
+      //       $rs1_value[31:0] =   (>>1$rd == $rs1) && /xreg[>>1$rd]>>1$wr ? >>1$result :
+      //                            /xreg[$rs1]>>1$value;
+      //    ?$rs2_valid
+      //       $rs2_value[31:0] =   (>>1$rd == $rs2) && /xreg[>>1$rd]>>1$wr ? >>1$result :
+      //                            /xreg[$rs2]>>1$value;
+      // '])
       m4_ifelse_block(m4_alu_stage, [''], [''], ['
       m4_alu_stage
          $result[31:0] =   $is_addi ?  $rs1_value + $imm :
