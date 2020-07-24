@@ -225,7 +225,7 @@ m4+definitions(['
       m4_ifelse_block(m4_pc_style, 1, ['
       @0
          // Lab : Next PC (6)
-$pc[31:0]  =   >>1$reset   ?  32'b0 : 
+         $pc[31:0]  =   >>1$reset   ?  32'b0 : 
                                        >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
       @0
