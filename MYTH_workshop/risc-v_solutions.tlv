@@ -201,13 +201,13 @@ m4+definitions(['
       m4_lab(1, ['Load Data 2
       @4
          $dmem_wr_en          = $is_s_instr && $valid;
-         $dmem_wr_index[3:0]  = $result[5:2];
          $dmem_wr_data[31:0]  = $src2_value;
-      @5
          $dmem_rd_en          = $is_load;
+         $dmem_addr[3:0]      = $result[5:2];
+
+      @5
          $ld_data[31:0]       = $dmem_rd_data;
-         $dmem_rd_index[3:0]  = $result[5:2];
-      m4+dmem(@5, @4)
+      m4+dmem(@4)
       '])
       m4_lab(1, ['Load/Store in Program
    m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
@@ -225,13 +225,13 @@ m4+definitions(['
       m4_ifelse_block(m4_pc_style, 1, ['
       @0
          // Lab : Next PC (6)
-         $pc[31:0]  =   $reset ? 32'b0 : 
-                        >>1$pc + 32'd4;
+$pc[31:0]  =   >>1$reset   ?  32'b0 : 
+                                       >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
       @0
-         $pc[31:0] = $reset       ? '0 :
-                     >>1$taken_br ? >>1$br_tgt_pc :
-                                    >>1$pc + 32'd4;
+         $pc[31:0] = >>1$reset      ?  '0 :
+                     >>1$taken_br   ?  >>1$br_tgt_pc :
+                                       >>1$pc + 32'd4;
       m4_tgt_stage
          $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 3, ['
@@ -240,7 +240,7 @@ m4+definitions(['
       @3
          $valid_taken_br = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>3$inc_pc ;
       m4_tgt_stage
@@ -251,7 +251,7 @@ m4+definitions(['
       @3
          $valid_taken_br = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>1$inc_pc ;
       m4_tgt_stage
@@ -263,7 +263,7 @@ m4+definitions(['
          $valid_load       = $valid && $is_load;
          $valid_taken_br   = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                         >>3$valid_load       ?  >>3$inc_pc    :
                                                 >>1$inc_pc ;
@@ -278,7 +278,7 @@ m4+definitions(['
          $is_jump    =  $is_jal || $is_jalr;
          $valid_jump =  $is_jump && $valid;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc   :
                         >>3$valid_load       ?  >>3$inc_pc      :
                         >>2$is_jal           ?  >>3$br_tgt_pc   :
@@ -291,8 +291,11 @@ m4+definitions(['
       
       m4_ifelse_block(m4_fetch_enable, 1, ['
       @1
-         $instr[31:0] = /imem[$pc[M4_IMEM_INDEX_CNT+1:2]]$instr;
+         $imem_rd_en                          = !$reset;
+         $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
+         $instr[31:0]                         = $imem_rd_data[31:0];
          `BOGUS_USE($instr)
+      m4+imem(@1)
       '])
 
       m4_ifelse_block(m4_fields_style, 1, ['
@@ -412,7 +415,7 @@ m4+definitions(['
       @3
          $rf_wr_en            = ($rd_valid && $valid) || >>2$valid_load;
          $rf_wr_index[4:0]    = >>2$valid_load ? >>2$rd : $rd;
-         $rf_wr_data[31:0]    = >>2$valid ? >>2$ld_data : $result;
+         $rf_wr_data[31:0]    = >>2$valid_load ? >>2$ld_data : $result;
       @2
          $rf_rd_en1           = $rs1_valid;
          $rf_rd_en2           = $rs2_valid;
