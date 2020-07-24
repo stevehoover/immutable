@@ -252,7 +252,7 @@ m4+definitions(['
          $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
       '])
 
-      m4_ifelse_block(m4_fetch_style, [''], [''], ['
+      m4_ifelse_block(m4_eval(m4_fetch_style>0), 1, ['
       @1
          $instr[31:0] = /imem[$pc[M4_IMEM_INDEX_CNT+1:2]]$instr;
       '])
