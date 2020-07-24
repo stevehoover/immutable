@@ -1,0 +1,872 @@
+\m4_TLV_version 1d: tl-x.org
+
+\SV
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/warp-v_includes/2d6d36baa4d2bc62321f982f78c8fe1456641a43/risc-v_defs.tlv'])
+
+m4+definitions(['
+   m4_define_vector(['M4_WORD'], 32)
+   m4_define(['M4_EXT_I'], 1)
+
+   m4_define(['M4_NUM_INSTRS'], 0)
+   
+   m4_echo(m4tlv_riscv_gen__body())
+'])
+
+// A 2-rd 1-wr register file in |cpu that reads and writes in the given stages. If read/write stages are equal, the read values reflect previous writes.
+// Reads earlier than writes will require bypass.
+\TLV rf(@_rd, @_wr)
+   // Reg File
+   @_wr
+      /xreg[31:0]
+         $wr = |cpu$rf_wr_en && (|cpu$rf_wr_index != 5'b0) && (|cpu$rf_wr_index == #xreg);
+         $value[31:0] = |cpu$reset ? '0 :
+                        $wr        ? |cpu$rf_wr_data :
+                                     $RETAIN;
+   @_rd
+      ?$rf_rd_en1
+         $rf_rd_data1[31:0] = /xreg[$rf_rd_index1]>>m4_stage_eval(@_wr - @_rd + 1)$value;
+      ?$rf_rd_en2
+         $rf_rd_data2[31:0] = /xreg[$rf_rd_index2]>>m4_stage_eval(@_wr - @_rd + 1)$value;
+
+      `BOGUS_USE($rf_rd_data1 $rf_rd_data2)
+
+// A data memory in |cpu at the given stage. Reads and writes in the same stage, where reads are of the data written by the previous transaction.
+\TLV dmem(@_rd, @_wr)
+   // Data Memory
+   @_wr
+      /dmem[15:0]
+         $wr = |cpu$dmem_wr_en && (|cpu$dmem_wr_index == #dmem);
+         $value[31:0] = |cpu$reset ? '0 :
+                        $wr        ? |cpu$dmem_wr_data :
+                                     $RETAIN;
+   @_rd                                     
+      ?$dmem_rd_en
+         $dmem_rd_data[31:0] = /dmem[$dmem_rd_index]>>m4_stage_eval(@_rd - @_wr)$value;
+      `BOGUS_USE($dmem_rd_data)
+
+\TLV myth_shell()
+   // ==========
+   // MYTH Shell (Provided)
+   // ==========
+   \SV_plus
+      // The program in an instruction memory.
+      logic [31:0] instrs [0:M4_NUM_INSTRS-1];
+      
+      assign instrs = '{
+         m4_instr0['']m4_forloop(['m4_instr_ind'], 1, M4_NUM_INSTRS, [', m4_echo(['m4_instr']m4_instr_ind)'])
+      };
+      
+      // String representations of the instructions for debug.
+   |cpu
+      @1
+         /M4_IMEM_HIER
+            $instr[31:0] = *instrs\[#imem\];
+
+
+\TLV cpu_viz(@_stage)
+   |cpu
+      // for pulling default viz signals into CPU
+      // and then back into viz
+      @_stage
+         $ANY = /top|cpuviz/defaults<>0$ANY;
+         `BOGUS_USE($dummy)
+         /xreg[31:0]
+            $ANY = /top|cpuviz/defaults/xreg<>0$ANY;
+         /dmem[15:0]
+            $ANY = /top|cpuviz/defaults/dmem<>0$ANY;
+   \SV_plus
+      logic [40*8-1:0] instr_strs [0:M4_NUM_INSTRS];
+      assign instr_strs = '{m4_asm_mem_expr "END                                     "};
+   |cpuviz
+      @1
+         /imem[m4_eval(M4_NUM_INSTRS-1):0]  // TODO: Cleanly report non-integer ranges.
+            $ANY = /top|cpu/imem<>0$ANY;
+            $instr_str[40*8-1:0] = *instr_strs[imem];
+            \viz_alpha
+               renderEach: function() {
+                  // Instruction memory is constant, so just create it once.
+                  if (!global.instr_mem_drawn) {
+                     global.instr_mem_drawn = [];
+                  }
+                  if (!global.instr_mem_drawn[this.getIndex()]) {
+                     global.instr_mem_drawn[this.getIndex()] = true;
+                     let instr_str = '$instr_str'.asString() + ": " + '$instr'.asBinaryStr(NaN);
+                     this.getCanvas().add(new fabric.Text(instr_str, {
+                        top: 18 * this.getIndex(),  // TODO: Add support for '#instr_mem'.
+                        left: -580,
+                        fontSize: 14,
+                        fontFamily: "monospace"
+                     }));
+                  }
+               }
+      @_stage
+         /defaults
+            {$is_lui, $is_auipc, $is_jal, $is_jalr, $is_beq, $is_bne, $is_blt, $is_bge, $is_bltu, $is_bgeu, $is_lb, $is_lh, $is_lw, $is_lbu, $is_lhu, $is_sb, $is_sh, $is_sw} = '0;
+            {$is_addi, $is_slti, $is_sltiu, $is_xori, $is_ori, $is_andi, $is_slli, $is_srli, $is_srai, $is_add, $is_sub, $is_sll, $is_slt, $is_sltu, $is_xor} = '0;
+            {$is_srl, $is_sra, $is_or, $is_and, $is_csrrw, $is_csrrs, $is_csrrc, $is_csrrwi, $is_csrrsi, $is_csrrci} = '0;
+            $valid = 1'b1;
+            $rd[4:0] = '0;
+            $rs1[4:0] = '0;
+            $rs2[4:0] = '0;
+            $src1_value[31:0] = '0;
+            $src2_value[31:0] = '0;
+            $result[31:0] = '0;
+            $pc[31:0] = '0;
+            $imm[31:0] = '0;
+            $is_s_instr = 1'b0;
+            $rd_valid = 1'b0;
+            $rs1_valid = 1'b0;
+            $rs2_valid = 1'b0;
+            $ld_data[31:0] = '0;
+            
+            /xreg[31:0]
+               $rf_wr_en            = '0;
+               $rf_wr_index[4:0]    = '0;
+               $rf_wr_data[31:0]    = '0;
+               $rf_rd_en1           = '0;
+               $rf_rd_en2           = '0;
+               $rf_rd_index1[4:0]   = '0;
+               $rf_rd_index2[4:0]   = '0;
+               $value[31:0] = '0;
+               `BOGUS_USE($value)
+               `BOGUS_USE($rf_wr_en $rf_wr_index $rf_wr_data $rf_rd_en1 $rf_rd_en2 $rf_rd_index1 $rf_rd_index2)
+               $dummy[0:0] = 1'b0;
+            /dmem[15:0]
+               $value[31:0] = '0;
+               `BOGUS_USE($value)
+               $dummy[0:0] = 1'b0;
+            `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr $is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_lb $is_lh $is_lw $is_lbu $is_lhu $is_sb $is_sh $is_sw)
+            `BOGUS_USE($is_addi $is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai $is_add $is_sub $is_sll $is_slt $is_sltu $is_xor)
+            `BOGUS_USE($is_srl $is_sra $is_or $is_and $is_csrrw $is_csrrs $is_csrrc $is_csrrwi $is_csrrsi $is_csrrci)
+            `BOGUS_USE($valid $rd $rs1 $rs2 $src1_value $src2_value $result $pc $imm)
+            `BOGUS_USE($is_s_instr $rd_valid $rs1_valid $rs2_valid $ld_data)
+            $dummy[0:0] = 1'b0;
+         $ANY = /top|cpu<>0$ANY;
+         /xreg[31:0]
+            $ANY = /top|cpu/xreg<>0$ANY;
+            `BOGUS_USE($dummy)
+         /dmem[15:0]
+            $ANY = /top|cpu/dmem<>0$ANY;
+            `BOGUS_USE($dummy)
+
+         // m4_mnemonic_expr is build for WARP-V signal names, which are slightly different. Correct them.
+         m4_define(['m4_modified_mnemonic_expr'], ['m4_patsubst(m4_mnemonic_expr, ['_instr'], [''])'])
+         $mnemonic[10*8-1:0] = m4_modified_mnemonic_expr "ILLEGAL   ";
+         \viz_alpha
+            //
+            renderEach: function() {
+               debugger;
+               //
+               // PC instr_mem pointer
+               //
+               let $pc = '$pc';
+               let color = !('$valid'.asBool()) ? "gray" :
+                                                  "blue";
+               let pcPointer = new fabric.Text("->", {
+                  top: 18 * ($pc.asInt() / 4),
+                  left: -600,
+                  fill: color,
+                  fontSize: 14,
+                  fontFamily: "monospace"
+               });
+               //
+               //
+               // Fetch Instruction
+               //
+               // TODO: indexing only works in direct lineage.  let fetchInstr = new fabric.Text('|fetch/instr_mem[$Pc]$instr'.asString(), {  // TODO: make indexing recursive.
+               //let fetchInstr = new fabric.Text('$raw'.asString("--"), {
+               //   top: 50,
+               //   left: 90,
+               //   fill: color,
+               //   fontSize: 14,
+               //   fontFamily: "monospace"
+               //});
+               //
+               // Instruction with values.
+               //
+               let regStr = (valid, regNum, regValue) => {
+                  return valid ? `r${regNum} (${regValue})` : `rX`;
+               };
+               let srcStr = ($src, $valid, $reg, $value) => {
+                  return $valid.asBool(false)
+                             ? `\n      ${regStr(true, $reg.asInt(NaN), $value.asInt(NaN))}`
+                             : "";
+               };
+               let str = `${regStr('$rd_valid'.asBool(false), '$rd'.asInt(NaN), '$result'.asInt(NaN))}\n` +
+                         `  = ${'$mnemonic'.asString()}${srcStr(1, '$rs1_valid', '$rs1', '$src1_value')}${srcStr(2, '$rs2_valid', '$rs2', '$src2_value')}\n` +
+                         `      i[${'$imm'.asInt(NaN)}]`;
+               let instrWithValues = new fabric.Text(str, {
+                  top: 70,
+                  left: 90,
+                  fill: color,
+                  fontSize: 14,
+                  fontFamily: "monospace"
+               });
+               return {objects: [pcPointer, instrWithValues]};
+            }
+         //
+         // Register file
+         //
+         /xreg[31:0]           
+            \viz_alpha
+               initEach: function() {
+                  let regname = new fabric.Text("Reg File", {
+                        top: -20,
+                        left: 367,
+                        fontSize: 14,
+                        fontFamily: "monospace"
+                     });
+                  let reg = new fabric.Text("", {
+                     top: 18 * this.getIndex(),
+                     left: 375,
+                     fontSize: 14,
+                     fontFamily: "monospace"
+                  });
+                  return {objects: {regname: regname, reg: reg}};
+               },
+               renderEach: function() {
+                  let mod = '|cpuviz$rd_valid'.asBool(false) && ('|cpuviz$rd'.asInt(-1) == this.getScope("xreg").index);
+                  let reg = parseInt(this.getIndex());
+                  let regIdent = reg.toString();
+                  let oldValStr = mod ? `(${'$value'.asInt(NaN).toString()})` : "";
+                  this.getInitObject("reg").setText(
+                     regIdent + ": " +
+                     '$value'.step(1).asInt(NaN).toString() + oldValStr);
+                  this.getInitObject("reg").setFill(mod ? "blue" : "black");
+               }
+         //
+         // DMem
+         //
+         /dmem[15:0]
+            \viz_alpha
+               initEach: function() {
+                  let memname = new fabric.Text("Mini DMem", {
+                        top: -20,
+                        left: 460,
+                        fontSize: 14,
+                        fontFamily: "monospace"
+                     });
+                  let mem = new fabric.Text("", {
+                     top: 18 * this.getIndex(),
+                     left: 468,
+                     fontSize: 14,
+                     fontFamily: "monospace"
+                  });
+                  return {objects: {memname: memname, mem: mem}};
+               },
+               renderEach: function() {
+                  let mod = '|cpuviz$is_s_instr'.asBool(false) && ('|cpuviz$result'.asInt(-1) == this.getScope("dmem").index);
+                  let mem = parseInt(this.getIndex());
+                  let memIdent = mem.toString();
+                  let oldValStr = mod ? `(${'$value'.asInt(NaN).toString()})` : "";
+                  this.getInitObject("mem").setText(
+                     memIdent + ": " +
+                     '$value'.step(1).asInt(NaN).toString() + oldValStr);
+                  this.getInitObject("mem").setFill(mod ? "blue" : "black");
+               }
+
+   
+\SV
+m4+definitions(['
+   m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
+   //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
+   //m4_define(['m4_stage'], ['m4_ifelse(m4_pipelined, 0, @1, $1)'])
+   //m4_define(['m4_pipelined'], 0)
+      
+      
+
+'])
+\TLV hidden_solution(_slide_num)
+   //m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/shivam/tlv_lib/risc-v_shell_lib.tlv'])
+
+   // /====================\
+   // | Sum 1 to 9 Program |
+   // \====================/
+   //
+   // Program for MYTH Workshop to test RV32I
+   // Add 1,2,3,...,9 (in that order).
+   //
+   // Regs:
+   //  r10 (a0): In: 0, Out: final sum
+   //  r12 (a2): 10
+   //  r13 (a3): 1..10
+   //  r14 (a4): Sum
+   // 
+   // External to function:
+   m4_asm(ADD, r10, r0, r0)             // Initialize r10 (a0) to 0.
+   // Function:
+   m4_asm(ADD, r14, r10, r0)            // Initialize sum register a4 with 0x0
+   m4_asm(ADDI, r12, r10, 1010)         // Store count of 10 in register a2.
+   m4_asm(ADD, r13, r10, r0)            // Initialize intermediate sum register a3 with 0
+   // Loop:
+   m4_asm(ADD, r14, r13, r14)           // Incremental addition
+   m4_asm(ADDI, r13, r13, 1)            // Increment intermediate register by 1
+   m4_asm(BLT, r13, r12, 1111111111000) // If a3 is less than a2, branch to label named <loop>
+   m4_asm(ADD, r10, r14, r0)            // Store final result to register a0 so that it can be read by main program
+   // m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
+   // m4_asm(LW, r15, r0, 100)
+   m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
+
+   |cpu
+      @0
+         $reset = *reset;
+      
+      
+      
+      
+      
+      // ============================================================================================================
+      // Solutions: Cut this section to provide the shell.
+      
+      m4_define(['m4_slide'], _slide_num)  // Build core for this slide
+      m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
+
+      m4_define(['m4_br_enable'], 0)
+      // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
+      m4_lab(6, ['Next PC
+      m4_define(['m4_pc_style'], 1)
+      '])
+      m4_lab(1, ['Fetch
+      m4_define(['m4_fetch_style'], 1)
+      '])
+      m4_lab(2, ['Instruction Type Decode
+      @1
+         $is_i_instr = $instr[6:2] ==? 5'b0000x ||
+                       $instr[6:2] ==? 5'b001x0 ||
+                       $instr[6:2] ==  5'b11001 ;
+         
+         $is_r_instr = $instr[6:2] ==  5'b01011 ||
+                       $instr[6:2] ==? 5'b011x0 ||
+                       $instr[6:2] ==  5'b10100 ;
+         
+         $is_s_instr = $instr[6:2] ==? 5'b0100x;
+         
+         $is_b_instr = $instr[6:2] ==  5'b11000;
+         
+         $is_j_instr = $instr[6:2] ==  5'b11011;
+         
+         $is_u_instr = $instr[6:2] ==? 5'b0x101;
+      '])
+      m4_lab(1, ['Instruction Immediate Decode
+      @1
+         $imm[31:0]  =  $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
+                        $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:7]} :
+                        $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
+                        $is_u_instr ? {$instr[31:12], 12'b0} :
+                        $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0} :
+                                       32'b0 ;
+      '])
+      m4_lab(1, ['Instruction Decode
+      m4_define(['m4_fields_style'], 1)
+      '])
+      m4_lab(1, ['RISC-V Instruction Field Decode
+      m4_define(['m4_fields_style'], 2)
+      @1
+         $funct7_valid = $is_r_instr;
+         $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+         $rs1_valid    = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+         $rs2_valid    = $is_r_instr || $is_s_instr || $is_b_instr ;
+         $rd_valid     = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
+      '])
+      m4_lab(1, ['Instruction Decode
+      m4_define(['m4_decode_style'], 1)
+      '])
+      m4_lab(2, ['Register File Inputs
+      m4_define(['m4_regfileio_style'], 1)
+      '])
+      m4_lab(1, ['Register File Read
+      m4_define(['m4_regfileio_style'], 2)
+      '])
+      m4_lab(1, ['ALU
+      m4_define(['m4_alu_style'], 1)
+      '])
+      m4_lab(2, ['Register File Write
+      m4_define(['m4_regfileio_style'], 3)
+      '])
+      m4_lab(2, ['Branches 1
+      m4_define(['m4_br_enable'], 1)
+      m4_define(['m4_br_stage'], @1)
+      '])
+      m4_lab(1, ['Branches 2
+      m4_define(['m4_br_enable'], 1)
+      m4_define(['m4_pc_style'], 2)
+      m4_define(['m4_tgt_stage'], @1)
+      '])
+      m4_lab(1, ['Testbench
+      m4_define(['m4_tb_style'], 1)
+      '])
+      m4_lab(10, ['3-Cycle valid
+      m4_define(['m4_valid_style'], 1)
+      '])
+      m4_lab(1, ['3-Cycle RISC-V 1
+      m4_define(['m4_regfileio_style'], 4)
+      m4_define(['m4_pc_style'], 3)
+      '])
+      m4_lab(2, ['3-Cycle RISC-V 2
+      m4_define(['m4_regfileio_style'], 5)
+      m4_define(['m4_tgt_stage'], @2)
+      m4_define(['m4_alu_style'], 2)
+      m4_define(['m4_br_stage'], @3)
+      '])
+      m4_lab(3, ['Register File Bypass
+      m4_define(['m4_regfileio_style'], 6)
+      '])
+      m4_lab(3, ['Branches
+      m4_define(['m4_valid_style'], 2)
+      m4_define(['m4_pc_style'], 4)
+      '])
+      m4_lab(1, ['Complete Instruction Decode
+      m4_define(['m4_decode_style'], 2)
+      '])
+      m4_lab(1, ['Complete ALU
+      m4_define(['m4_alu_style'], 3)
+      '])
+      m4_lab(4, ['Redirect Loads
+      m4_define(['m4_pc_style'], 5)
+      m4_define(['m4_valid_style'], 3)
+      '])
+      m4_lab(1, ['Load Data 1
+      m4_define(['m4_alu_style'], 4)
+      m4_define(['m4_regfileio_style'], 7)
+      '])
+      m4_lab(1, ['Load Data 2
+      @4
+         $dmem_wr_en          = $is_s_instr && $valid;
+         $dmem_wr_index[3:0]  = $result[5:2];
+         $dmem_wr_data[31:0]  = $src2_value;
+      @5
+         $dmem_rd_en          = $is_load;
+         $ld_data[31:0]       = $dmem_rd_data;
+         $dmem_rd_index[3:0]  = $result[5:2];
+      m4+dmem(@5, @4)
+      '])
+      m4_lab(1, ['Load/Store in Program
+   m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
+   m4_asm(LW, r15, r0, 100)
+   m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
+   |cpu
+      m4_define(['m4_fetch_style'], 2)
+      m4_define(['m4_tb_style'], 2)
+      '])
+      m4_lab(2, ['Jumps
+      m4_define(['m4_valid_style'], 4)
+      m4_define(['m4_pc_style'], 6)
+      '])
+
+      // Logic that changes throughout.
+      m4_ifelse_block(m4_pc_style, 1, ['
+      @0
+         // Lab : Next PC (6)
+         $pc[31:0]  =   $reset ? 32'd0 : 
+                        >>1$pc + 32'd4;
+      '], m4_pc_style, 2, ['
+      @0
+         $pc[31:0] = $reset       ? '0 :
+                     >>1$taken_br ? >>1$br_tgt_pc :
+                                    >>1$pc + 32'd4;
+      m4_tgt_stage
+         $br_tgt_pc[31:0] = $pc + $imm;
+      '], m4_pc_style, 3, ['
+      @1
+         $inc_pc[31:0] = $pc + 32'd4;
+      @3
+         $valid_taken_br = $valid && $taken_br;
+      @0
+         $pc[31:0]   =  $reset               ?  '0 :
+                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
+                                                >>3$inc_pc ;
+      m4_tgt_stage
+         $br_tgt_pc[31:0] = $pc + $imm;
+      '], m4_pc_style, 4, ['
+      @1
+         $inc_pc[31:0] = $pc + 32'd4;
+      @3
+         $valid_taken_br = $valid && $taken_br;
+      @0
+         $pc[31:0]   =  $reset               ?  '0 :
+                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
+                                                >>1$inc_pc ;
+      m4_tgt_stage
+         $br_tgt_pc[31:0] = $pc + $imm;
+      '], m4_pc_style, 5, ['
+      @1
+         $inc_pc[31:0] = $pc + 32'd4;
+      @3
+         $valid_load       = $valid && $is_load;
+         $valid_taken_br   = $valid && $taken_br;
+      @0
+         $pc[31:0]   =  $reset               ?  '0 :
+                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
+                        >>3$valid_load       ?  >>3$inc_pc    :
+                                                >>1$inc_pc ;
+      m4_tgt_stage
+         $br_tgt_pc[31:0] = $pc + $imm;
+      '], m4_pc_style, 6, ['
+      @1
+         $inc_pc[31:0] = $pc + 32'd4;
+      @3
+         $valid_load       = $valid && $is_load;
+         $valid_taken_br   = $valid && $taken_br;
+         $is_jump    =  $is_jal || $is_jalr;
+         $valid_jump =  $is_jump && $valid;
+      @0
+         $pc[31:0]   =  $reset               ?  '0 :
+                        >>3$valid_taken_br   ?  >>3$br_tgt_pc   :
+                        >>3$valid_load       ?  >>3$inc_pc      :
+                        >>2$is_jal           ?  >>3$br_tgt_pc   :
+                        >>2$is_jalr          ?  >>3$jalr_tgt_pc :
+                                                >>1$inc_pc ;
+      m4_tgt_stage
+         $br_tgt_pc[31:0]     =  $pc + $imm;
+         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
+      '])
+
+      m4_ifelse_block(m4_fetch_style, [''], [''], ['
+      @1
+         $instr[31:0] = /imem[$pc[M4_IMEM_INDEX_CNT+1:2]]$instr;
+      '])
+
+      m4_ifelse_block(m4_fields_style, 1, ['
+      @1
+         $funct7[6:0] = $instr[31:25];
+         $funct3[2:0] = $instr[14:12];
+         $rs1[4:0]    = $instr[19:15];
+         $rs2[4:0]    = $instr[24:20];
+         $rd[4:0]     = $instr[11:7];
+         $opcode[6:0] = $instr[6:0];
+         `BOGUS_USE($funct7)
+      '], m4_fields_style, 2, ['         // Other fields
+      @1
+         ?$funct7_valid
+            $funct7[6:0] = $instr[31:25];
+         ?$funct3_valid
+            $funct3[2:0] = $instr[14:12];
+         ?$rs1_valid
+            $rs1[4:0]    = $instr[19:15];
+         ?$rs2_valid
+            $rs2[4:0]    = $instr[24:20];
+         ?$rd_valid
+            $rd[4:0]     = $instr[11:7];
+         $opcode[6:0]    = $instr[6:0];
+         `BOGUS_USE($funct7)
+      '])
+
+      m4_ifelse_block(m4_decode_style, 1, ['
+      @1
+         $funct3_opcode[9:0] = {$funct3, $opcode};
+         $is_beq  = $funct3_opcode == 10'b000_1100011;
+         $is_bne  = $funct3_opcode == 10'b001_1100011;
+         $is_blt  = $funct3_opcode == 10'b100_1100011;
+         $is_bge  = $funct3_opcode == 10'b101_1100011;
+         $is_bltu = $funct3_opcode == 10'b110_1100011;
+         $is_bgeu = $funct3_opcode == 10'b111_1100011;
+         $is_addi = $funct3_opcode == 10'b000_0010011;
+         $is_add  = $funct3_opcode == 10'b000_0110011;
+         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
+      '], m4_decode_style, 2, ['
+      @2
+         $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
+         $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
+         $is_auipc   =  $dec_bits ==? 11'bx_xxx_0010111 ;
+         $is_jal     =  $dec_bits ==? 11'bx_xxx_1101111 ;
+         $is_jalr    =  $dec_bits ==? 11'bx_000_1100111 ;
+         
+         $is_beq     =  $dec_bits ==? 11'bx_000_1100011;
+         $is_bne     =  $dec_bits ==? 11'bx_001_1100011;
+         $is_blt     =  $dec_bits ==? 11'bx_100_1100011;
+         $is_bge     =  $dec_bits ==? 11'bx_101_1100011;
+         $is_bltu    =  $dec_bits ==? 11'bx_110_1100011;
+         $is_bgeu    =  $dec_bits ==? 11'bx_111_1100011;
+         
+         $is_load    =  $opcode   ==  7'b0000011        ;
+         
+         $is_sb      =  $dec_bits ==? 11'bx_000_0100011 ;
+         $is_sh      =  $dec_bits ==? 11'bx_001_0100011 ;
+         $is_sw      =  $dec_bits ==? 11'bx_010_0100011 ;
+
+         $is_addi    =  $dec_bits ==? 11'bx_000_0010011 ;
+         $is_slti    =  $dec_bits ==? 11'bx_010_0010011 ;
+         $is_sltiu   =  $dec_bits ==? 11'bx_011_0010011 ;
+         $is_xori    =  $dec_bits ==? 11'bx_100_0010011 ;
+         $is_ori     =  $dec_bits ==? 11'bx_110_0010011 ;
+         $is_andi    =  $dec_bits ==? 11'bx_111_0010011 ;
+         $is_slli    =  $dec_bits ==? 11'b0_001_0010011 ;
+         $is_srli    =  $dec_bits ==? 11'b0_101_0010011 ;
+         $is_srai    =  $dec_bits ==? 11'b1_101_0010011 ;
+
+         $is_add     =  $dec_bits ==? 11'b0_000_0110011 ;
+         $is_sub     =  $dec_bits ==? 11'b1_000_0110011 ;
+         $is_sll     =  $dec_bits ==? 11'b0_001_0110011 ;
+         $is_slt     =  $dec_bits ==? 11'b0_010_0110011 ;
+         $is_sltu    =  $dec_bits ==? 11'b0_011_0110011 ;
+         $is_xor     =  $dec_bits ==? 11'b0_100_0110011 ;
+         $is_srl     =  $dec_bits ==? 11'b0_101_0110011 ;
+         $is_sra     =  $dec_bits ==? 11'b1_101_0110011 ;
+         $is_or      =  $dec_bits ==? 11'b0_110_0110011 ;
+         $is_and     =  $dec_bits ==? 11'b0_111_0110011 ;
+
+         `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr)
+         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu)
+         `BOGUS_USE($is_load $is_sb $is_sh $is_sw)
+         `BOGUS_USE($is_addi $is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai)
+         `BOGUS_USE($is_add $is_sub $is_sll $is_slt $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
+      '])
+
+      m4_ifelse_block(m4_regfileio_style, 1, ['
+      @1
+         $rf_wr_en            = '0;
+         $rf_wr_index[4:0]    = '0;
+         $rf_wr_data[31:0]    = '0;
+         $rf_rd_en1           = '0;
+         $rf_rd_en2           = '0;
+         $rf_rd_index1[4:0]   = '0;
+         $rf_rd_index2[4:0]   = '0;
+      '], m4_regfileio_style, 2, ['
+      @1
+         $rf_wr_en            = '0;
+         $rf_wr_index[4:0]    = '0;
+         $rf_wr_data[31:0]    = '0;
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = $rf_rd_data1;
+         $src2_value[31:0]    = $rf_rd_data2;
+      m4+rf(@1, @1)
+      '], m4_regfileio_style, 3, ['
+      @1
+         $rf_wr_en            = $rd_valid;
+         $rf_wr_index[4:0]    = $rd;
+         $rf_wr_data[31:0]    = $result;
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = $rf_rd_data1;
+         $src2_value[31:0]    = $rf_rd_data2;
+      m4+rf(@1, @1)
+      '], m4_regfileio_style, 4, ['
+      @1
+         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_index[4:0]    = $rd;
+         $rf_wr_data[31:0]    = $result;
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = $rf_rd_data1;
+         $src2_value[31:0]    = $rf_rd_data2;
+      m4+rf(@1, @1)
+      '], m4_regfileio_style, 5, ['
+      @3
+         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_index[4:0]    = $rd;
+         $rf_wr_data[31:0]    = $result;
+      @2
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = $rf_rd_data1;
+         $src2_value[31:0]    = $rf_rd_data2;  
+      m4+rf(@2, @3) 
+      '], m4_regfileio_style, 6, ['
+      @3
+         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_index[4:0]    = $rd;
+         $rf_wr_data[31:0]    = $result;
+      @2
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+                                                                                                         $rf_rd_data1 ;
+         $src2_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+                                                                                                         $rf_rd_data2 ;
+      m4+rf(@2, @3)
+      '], m4_regfileio_style, 7, ['
+      @3
+         $rf_wr_en            = ($rd_valid && $valid) || >>2$valid_load;
+         $rf_wr_index[4:0]    = >>2$valid_load ? >>2$rd : $rd;
+         $rf_wr_data[31:0]    = >>2$valid ? >>2$ld_data : $result;
+      @2
+         $rf_rd_en1           = $rs1_valid;
+         $rf_rd_en2           = $rs2_valid;
+         $rf_rd_index1[4:0]   = $rs1;
+         $rf_rd_index2[4:0]   = $rs2;
+         $src1_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+                                                                                                         $rf_rd_data1 ;
+         $src2_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+                                                                                                         $rf_rd_data2 ;
+      m4+rf(@2, @3)
+      '])
+
+      m4_ifelse_block(m4_alu_style, 1, ['
+      @1
+         $result[31:0] =   $is_addi ?  $src1_value + $imm :
+                           $is_add  ?  $src1_value + $src2_value :
+                                       32'bx;
+      '], m4_alu_style, 2, ['
+      @3
+         $result[31:0] =   $is_addi ?  $src1_value + $imm :
+                           $is_add  ?  $src1_value + $src2_value :
+                                       32'bx;
+      '], m4_alu_style, 3, ['
+      @3
+         $result[31:0] =   $is_andi    ?  $src1_value & $imm :
+                           $is_ori     ?  $src1_value | $imm :
+                           $is_xori    ?  $src1_value ^ $imm :
+                           $is_addi    ?  $src1_value + $imm :
+                           $is_slli    ?  $src1_value << $imm[5:0]  :
+                           $is_srli    ?  $src1_value >> $imm[5:0]  :
+                           $is_and     ?  $src1_value & $src2_value :
+                           $is_or      ?  $src1_value | $src2_value :
+                           $is_xor     ?  $src1_value ^ $src2_value :
+                           $is_add     ?  $src1_value + $src2_value :
+                           $is_sub     ?  $src1_value - $src2_value :
+                           $is_sll     ?  $src1_value << $src2_value[4:0] :
+                           $is_srl     ?  $src1_value >> $src2_value[4:0] :
+                           $is_sltu    ?  $sltu_rslt :
+                           $is_sltiu   ?  $sltiu_rslt :
+                           $is_lui     ?  {$imm[31:12], 12'b0} :
+                           $is_auipc   ?  $pc + $imm :
+                           $is_jal     ?  $pc + 32'd4 :
+                           $is_jalr    ?  $pc + 32'd4 :
+                           $is_srai    ?  {{32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
+                           $is_slt     ?  $slt_int_rslt :
+                           $is_slti    ?  $slti_int_rslt :
+                           $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
+                                          32'bx;
+         
+         $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
+         $sltiu_rslt[31:0]     =   $src1_value < $imm;
+         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
+         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
+      '], m4_alu_style, 4, ['
+      @3
+         $result[31:0] =   $is_andi    ?  $src1_value & $imm :
+                           $is_ori     ?  $src1_value | $imm :
+                           $is_xori    ?  $src1_value ^ $imm :
+                           ($is_addi || $is_load || $is_s_instr) ? $src1_value + $imm :
+                           $is_slli    ?  $src1_value << $imm[5:0]  :
+                           $is_srli    ?  $src1_value >> $imm[5:0]  :
+                           $is_and     ?  $src1_value & $src2_value :
+                           $is_or      ?  $src1_value | $src2_value :
+                           $is_xor     ?  $src1_value ^ $src2_value :
+                           $is_add     ?  $src1_value + $src2_value :
+                           $is_sub     ?  $src1_value - $src2_value :
+                           $is_sll     ?  $src1_value << $src2_value[4:0] :
+                           $is_srl     ?  $src1_value >> $src2_value[4:0] :
+                           $is_sltu    ?  $sltu_rslt :
+                           $is_sltiu   ?  $sltiu_rslt :
+                           $is_lui     ?  {$imm[31:12], 12'b0} :
+                           $is_auipc   ?  $pc + $imm :
+                           $is_jal     ?  $pc + 32'd4 :
+                           $is_jalr    ?  $pc + 32'd4 :
+                           $is_srai    ?  {{32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
+                           $is_slt     ?  $slt_int_rslt :
+                           $is_slti    ?  $slti_int_rslt :
+                           $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
+                                          32'bx;
+         
+         $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
+         $sltiu_rslt[31:0]     =   $src1_value < $imm;
+         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
+         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
+      '])
+
+      m4_ifelse_block(m4_br_enable, 1, ['
+      m4_br_stage
+         $taken_br   =  ($is_beq  && ($src1_value == $src2_value)) ||
+                        ($is_bne  && ($src1_value != $src2_value)) ||
+                        ($is_blt  && (($src1_value < $src2_value) ^ ($src1_value[31]!=$src2_value[31]))) ||
+                        ($is_bge  && (($src1_value >= $src2_value) ^ ($src1_value[31]!=$src2_value[31]))) ||
+                        ($is_bltu && ($src1_value < $src2_value)) ||
+                        ($is_bgeu && ($src1_value >= $src2_value)) ;
+      '])
+      m4_ifelse_block(m4_valid_style, 1, ['
+      @0
+         $start = >>1$reset && !$reset;
+         $valid = $reset ? 1'b0 :
+                  $start ? 1'b1 :
+                           >>3$valid ;
+      '], m4_valid_style, 2, ['
+      @3
+         $valid = !($reset || 
+                  >>1$valid_taken_br || >>2$valid_taken_br);
+      '], m4_valid_style, 3, ['
+      @3
+         $valid = !($reset || 
+                  >>1$valid_taken_br || >>2$valid_taken_br ||
+                  >>1$valid_load || >>2$valid_load);
+      '], m4_valid_style, 4, ['
+      @3
+         $valid = !($reset || 
+                  >>1$valid_taken_br || >>2$valid_taken_br ||
+                  >>1$valid_load || >>2$valid_load ||
+                  $valid_jump);
+      '])
+      
+      m4_ifelse_block(m4_tb_style, 1, ['
+      @1
+         *passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9);
+      '], m4_tb_style, 2, ['
+      @1
+         *passed = |cpu/xreg[15]>>5$value == (1+2+3+4+5+6+7+8+9);
+      '])
+   
+   // ============================================================================================================
+   
+   
+   
+   
+   
+   
+   // Assert these to end simulation (before Makerchip cycle limit).
+   m4_ifelse_block(m4_intermediate, 1, ['
+   *passed = *cyc_cnt > 40;
+   '])
+   *failed = 1'b0;
+   
+   
+   m4+myth_shell()
+   
+   m4+cpu_viz(@4)
+   
+\SV
+
+   // ==========================================
+   // For use in Makerchip for the MYTH Workshop
+   // Provides reference solutions
+   // without visibility to source code.
+   // ==========================================
+   
+   // ----------------------------------
+   // Instructions:
+   //    - When stuck on a particular lab, provide the slide number of the lab as the
+   //      parameter to the m4+solutions macro instantiation below, and compile/simulate.
+   //    - A reference solution will build, but the source code will not be
+   //      visible.
+   //    - You may use waveforms, diagrams, and visualization to understand the proper circuit, but you
+   //      will have to come up with the code. Logic expression syntax can be found by hovering over the
+   //      signal assignment in the diagram.
+   //    - Also reference https://github.com/stevehoover/RISC-V_MYTH_Workshop/blob/master/README.md
+   //      for updated information during the workshop as well as live support links.
+   // ----------------------------------
+
+   // Default Makerchip TL-Verilog Code Template
+   //m4_include_makerchip_hidden(['myth_workshop_solutions.private.tlv'])
+   //m4_include_url(['https://raw.githubusercontent.com/stevehoover/immutable/shivam/MYTH_workshop/risc-v_solutions.tlv'])
+   // Macro providing required top-level module definition, random
+   // stimulus support, and Verilator config.
+   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+ 
+\TLV
+   m4+hidden_solution(51)
+
+   // Assert these to end simulation (before Makerchip cycle limit).
+   *passed = *cyc_cnt > 40;
+   *failed = 1'b0;
+\SV
+   endmodule
