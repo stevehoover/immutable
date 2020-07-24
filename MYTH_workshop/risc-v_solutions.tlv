@@ -52,14 +52,13 @@ m4+definitions(['
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
 
-      m4_define(['m4_br_enable'], 0)
-      m4_define(['m4_decode_enable'], 0)
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
       m4_lab(1, ['Fetch
-      m4_define(['m4_fetch_style'], 1)
+      m4_define(['m4_fetch_enable'], 1)
+      // just so that M4_NUM_INSTRS can get overwritten later, expression is same
       '])
       m4_lab(2, ['Instruction Type Decode
       @1
@@ -215,7 +214,6 @@ m4+definitions(['
    m4_asm(LW, r15, r0, 100)
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
    |cpu
-      m4_define(['m4_fetch_style'], 2)
       m4_define(['m4_tb_style'], 2)
       '])
       m4_lab(2, ['Jumps
@@ -290,8 +288,8 @@ m4+definitions(['
          $br_tgt_pc[31:0]     =  $pc + $imm;
          $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
       '])
-
-      m4_ifelse_block(m4_eval(m4_fetch_style > 0), 1, ['
+      
+      m4_ifelse_block(m4_fetch_enable, 1, ['
       @1
          $instr[31:0] = /imem[$pc[M4_IMEM_INDEX_CNT+1:2]]$instr;
          `BOGUS_USE($instr)
