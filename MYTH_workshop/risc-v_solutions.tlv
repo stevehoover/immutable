@@ -52,13 +52,13 @@ m4+definitions(['
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
 
-      m4_define(['m4_br_enable'], 0)
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
       m4_lab(1, ['Fetch
-      m4_define(['m4_fetch_style'], 1)
+      m4_define(['m4_fetch_enable'], 1)
+      // just so that M4_NUM_INSTRS can get overwritten later, expression is same
       '])
       m4_lab(2, ['Instruction Type Decode
       @1
@@ -77,6 +77,7 @@ m4+definitions(['
          $is_j_instr = $instr[6:2] ==  5'b11011;
          
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
+         `BOGUS_USE($is_r_instr $is_i_instr $is_s_instr $is_b_instr $is_u_instr $is_j_instr)
       '])
       m4_lab(1, ['Instruction Immediate Decode
       @1
@@ -86,6 +87,7 @@ m4+definitions(['
                         $is_u_instr ? {$instr[31:12], 12'b0} :
                         $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0} :
                                        32'b0 ;
+         `BOGUS_USE($is_r_instr)
       '])
       m4_lab(1, ['Instruction Decode
       m4_define(['m4_fields_style'], 1)
@@ -100,7 +102,8 @@ m4+definitions(['
          $rd_valid     = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
       '])
       m4_lab(1, ['Instruction Decode
-      m4_define(['m4_decode_style'], 1)
+      m4_define(['m4_decode_enable'], 1)
+      m4_define(['m4_decode_stage'], @1)
       '])
       m4_lab(2, ['Register File Inputs
       m4_define(['m4_regfileio_style'], 1)
@@ -147,7 +150,42 @@ m4+definitions(['
       m4_define(['m4_pc_style'], 4)
       '])
       m4_lab(1, ['Complete Instruction Decode
-      m4_define(['m4_decode_style'], 2)
+      m4_define(['m4_decode_stage'], @2)
+      @2
+         $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
+         $is_auipc   =  $dec_bits ==? 11'bx_xxx_0010111 ;
+         $is_jal     =  $dec_bits ==? 11'bx_xxx_1101111 ;
+         $is_jalr    =  $dec_bits ==? 11'bx_000_1100111 ;
+       
+         $is_load    =  $opcode   ==  7'b0000011        ;
+         
+         $is_sb      =  $dec_bits ==? 11'bx_000_0100011 ;
+         $is_sh      =  $dec_bits ==? 11'bx_001_0100011 ;
+         $is_sw      =  $dec_bits ==? 11'bx_010_0100011 ;
+
+         $is_slti    =  $dec_bits ==? 11'bx_010_0010011 ;
+         $is_sltiu   =  $dec_bits ==? 11'bx_011_0010011 ;
+         $is_xori    =  $dec_bits ==? 11'bx_100_0010011 ;
+         $is_ori     =  $dec_bits ==? 11'bx_110_0010011 ;
+         $is_andi    =  $dec_bits ==? 11'bx_111_0010011 ;
+         $is_slli    =  $dec_bits ==? 11'b0_001_0010011 ;
+         $is_srli    =  $dec_bits ==? 11'b0_101_0010011 ;
+         $is_srai    =  $dec_bits ==? 11'b1_101_0010011 ;
+
+         $is_sub     =  $dec_bits ==? 11'b1_000_0110011 ;
+         $is_sll     =  $dec_bits ==? 11'b0_001_0110011 ;
+         $is_slt     =  $dec_bits ==? 11'b0_010_0110011 ;
+         $is_sltu    =  $dec_bits ==? 11'b0_011_0110011 ;
+         $is_xor     =  $dec_bits ==? 11'b0_100_0110011 ;
+         $is_srl     =  $dec_bits ==? 11'b0_101_0110011 ;
+         $is_sra     =  $dec_bits ==? 11'b1_101_0110011 ;
+         $is_or      =  $dec_bits ==? 11'b0_110_0110011 ;
+         $is_and     =  $dec_bits ==? 11'b0_111_0110011 ;
+
+         `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr)
+         `BOGUS_USE($is_load $is_sb $is_sh $is_sw)
+         `BOGUS_USE($is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai)
+         `BOGUS_USE($is_sub $is_sll $is_slt $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
       '])
       m4_lab(1, ['Complete ALU
       m4_define(['m4_alu_style'], 3)
@@ -163,20 +201,19 @@ m4+definitions(['
       m4_lab(1, ['Load Data 2
       @4
          $dmem_wr_en          = $is_s_instr && $valid;
-         $dmem_wr_index[3:0]  = $result[5:2];
          $dmem_wr_data[31:0]  = $src2_value;
-      @5
          $dmem_rd_en          = $is_load;
+         $dmem_addr[3:0]      = $result[5:2];
+
+      @5
          $ld_data[31:0]       = $dmem_rd_data;
-         $dmem_rd_index[3:0]  = $result[5:2];
-      m4+dmem(@5, @4)
+      m4+dmem(@4)
       '])
       m4_lab(1, ['Load/Store in Program
    m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
    m4_asm(LW, r15, r0, 100)
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
    |cpu
-      m4_define(['m4_fetch_style'], 2)
       m4_define(['m4_tb_style'], 2)
       '])
       m4_lab(2, ['Jumps
@@ -188,13 +225,13 @@ m4+definitions(['
       m4_ifelse_block(m4_pc_style, 1, ['
       @0
          // Lab : Next PC (6)
-         $pc[31:0]  =   $reset ? 32'b0 : 
-                        >>1$pc + 32'd4;
+         $pc[31:0]  =   >>1$reset   ?  32'b0 : 
+                                       >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
       @0
-         $pc[31:0] = $reset       ? '0 :
-                     >>1$taken_br ? >>1$br_tgt_pc :
-                                    >>1$pc + 32'd4;
+         $pc[31:0] = >>1$reset      ?  '0 :
+                     >>1$taken_br   ?  >>1$br_tgt_pc :
+                                       >>1$pc + 32'd4;
       m4_tgt_stage
          $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 3, ['
@@ -203,7 +240,7 @@ m4+definitions(['
       @3
          $valid_taken_br = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>3$inc_pc ;
       m4_tgt_stage
@@ -214,7 +251,7 @@ m4+definitions(['
       @3
          $valid_taken_br = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>1$inc_pc ;
       m4_tgt_stage
@@ -226,7 +263,7 @@ m4+definitions(['
          $valid_load       = $valid && $is_load;
          $valid_taken_br   = $valid && $taken_br;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                         >>3$valid_load       ?  >>3$inc_pc    :
                                                 >>1$inc_pc ;
@@ -241,7 +278,7 @@ m4+definitions(['
          $is_jump    =  $is_jal || $is_jalr;
          $valid_jump =  $is_jump && $valid;
       @0
-         $pc[31:0]   =  $reset               ?  '0 :
+         $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc   :
                         >>3$valid_load       ?  >>3$inc_pc      :
                         >>2$is_jal           ?  >>3$br_tgt_pc   :
@@ -251,10 +288,14 @@ m4+definitions(['
          $br_tgt_pc[31:0]     =  $pc + $imm;
          $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
       '])
-
-      m4_ifelse_block(m4_eval(m4_fetch_style>0), 1, ['
+      
+      m4_ifelse_block(m4_fetch_enable, 1, ['
       @1
-         $instr[31:0] = /imem[$pc[M4_IMEM_INDEX_CNT+1:2]]$instr;
+         $imem_rd_en                          = !$reset;
+         $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
+         $instr[31:0]                         = $imem_rd_data[31:0];
+         `BOGUS_USE($instr)
+      m4+imem(@1)
       '])
 
       m4_ifelse_block(m4_fields_style, 1, ['
@@ -282,65 +323,19 @@ m4+definitions(['
          `BOGUS_USE($funct7)
       '])
 
-      m4_ifelse_block(m4_decode_style, 1, ['
-      @1
-         $funct3_opcode[9:0] = {$funct3, $opcode};
-         $is_beq  = $funct3_opcode == 10'b000_1100011;
-         $is_bne  = $funct3_opcode == 10'b001_1100011;
-         $is_blt  = $funct3_opcode == 10'b100_1100011;
-         $is_bge  = $funct3_opcode == 10'b101_1100011;
-         $is_bltu = $funct3_opcode == 10'b110_1100011;
-         $is_bgeu = $funct3_opcode == 10'b111_1100011;
-         $is_addi = $funct3_opcode == 10'b000_0010011;
-         $is_add  = $funct3_opcode == 10'b000_0110011;
-         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
-      '], m4_decode_style, 2, ['
-      @2
+      m4_ifelse_block(m4_decode_enable, 1, ['
+      m4_decode_stage
          $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
-         $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
-         $is_auipc   =  $dec_bits ==? 11'bx_xxx_0010111 ;
-         $is_jal     =  $dec_bits ==? 11'bx_xxx_1101111 ;
-         $is_jalr    =  $dec_bits ==? 11'bx_000_1100111 ;
-         
          $is_beq     =  $dec_bits ==? 11'bx_000_1100011;
          $is_bne     =  $dec_bits ==? 11'bx_001_1100011;
          $is_blt     =  $dec_bits ==? 11'bx_100_1100011;
          $is_bge     =  $dec_bits ==? 11'bx_101_1100011;
          $is_bltu    =  $dec_bits ==? 11'bx_110_1100011;
          $is_bgeu    =  $dec_bits ==? 11'bx_111_1100011;
-         
-         $is_load    =  $opcode   ==  7'b0000011        ;
-         
-         $is_sb      =  $dec_bits ==? 11'bx_000_0100011 ;
-         $is_sh      =  $dec_bits ==? 11'bx_001_0100011 ;
-         $is_sw      =  $dec_bits ==? 11'bx_010_0100011 ;
 
-         $is_addi    =  $dec_bits ==? 11'bx_000_0010011 ;
-         $is_slti    =  $dec_bits ==? 11'bx_010_0010011 ;
-         $is_sltiu   =  $dec_bits ==? 11'bx_011_0010011 ;
-         $is_xori    =  $dec_bits ==? 11'bx_100_0010011 ;
-         $is_ori     =  $dec_bits ==? 11'bx_110_0010011 ;
-         $is_andi    =  $dec_bits ==? 11'bx_111_0010011 ;
-         $is_slli    =  $dec_bits ==? 11'b0_001_0010011 ;
-         $is_srli    =  $dec_bits ==? 11'b0_101_0010011 ;
-         $is_srai    =  $dec_bits ==? 11'b1_101_0010011 ;
-
+         $is_addi    =  $dec_bits ==? 11'bx_000_0010011;
          $is_add     =  $dec_bits ==? 11'b0_000_0110011 ;
-         $is_sub     =  $dec_bits ==? 11'b1_000_0110011 ;
-         $is_sll     =  $dec_bits ==? 11'b0_001_0110011 ;
-         $is_slt     =  $dec_bits ==? 11'b0_010_0110011 ;
-         $is_sltu    =  $dec_bits ==? 11'b0_011_0110011 ;
-         $is_xor     =  $dec_bits ==? 11'b0_100_0110011 ;
-         $is_srl     =  $dec_bits ==? 11'b0_101_0110011 ;
-         $is_sra     =  $dec_bits ==? 11'b1_101_0110011 ;
-         $is_or      =  $dec_bits ==? 11'b0_110_0110011 ;
-         $is_and     =  $dec_bits ==? 11'b0_111_0110011 ;
-
-         `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr)
-         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu)
-         `BOGUS_USE($is_load $is_sb $is_sh $is_sw)
-         `BOGUS_USE($is_addi $is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai)
-         `BOGUS_USE($is_add $is_sub $is_sll $is_slt $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
+         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
       '])
 
       m4_ifelse_block(m4_regfileio_style, 1, ['
@@ -420,7 +415,7 @@ m4+definitions(['
       @3
          $rf_wr_en            = ($rd_valid && $valid) || >>2$valid_load;
          $rf_wr_index[4:0]    = >>2$valid_load ? >>2$rd : $rd;
-         $rf_wr_data[31:0]    = >>2$valid ? >>2$ld_data : $result;
+         $rf_wr_data[31:0]    = >>2$valid_load ? >>2$ld_data : $result;
       @2
          $rf_rd_en1           = $rs1_valid;
          $rf_rd_en2           = $rs2_valid;
