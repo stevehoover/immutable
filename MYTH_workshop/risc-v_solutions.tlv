@@ -541,20 +541,11 @@ m4+definitions(['
       '], m4_tb_style, 2, ['
       @1
          *passed = |cpu/xreg[15]>>5$value == (1+2+3+4+5+6+7+8+9);
+      '], ['
+         *passed = *cyc_cnt > 40;
       '])
    
    // ============================================================================================================
-   
-   
-   
-   
-   
-   
-   // Assert these to end simulation (before Makerchip cycle limit).
-   m4_ifelse_block(m4_intermediate, 1, ['
-   *passed = *cyc_cnt > 40;
-   '])
-   *failed = 1'b0;
    
    
    m4+myth_shell()
