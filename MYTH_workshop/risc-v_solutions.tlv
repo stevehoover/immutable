@@ -536,20 +536,19 @@ m4+definitions(['
                   $valid_jump);
       '])
       
-      m4_ifelse_block(m4_tb_style, 1, ['
       @1
+         m4_ifelse_block(m4_tb_style, 1, ['
          *passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9);
-      '], m4_tb_style, 2, ['
-      @1
+         '], m4_tb_style, 2, ['
          *passed = |cpu/xreg[15]>>5$value == (1+2+3+4+5+6+7+8+9);
-      '], ['
+         '], ['
          *passed = *cyc_cnt > 40;
-      '])
+         '])
+         *failed = 1'b0;
+      
    
    // ============================================================================================================
    
-   
-   m4+cpu_viz(@4)
 
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
