@@ -12,7 +12,6 @@ m4+definitions(['
 
 '])
 \TLV hidden_solution(_slide_num)
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/f6ad8dd97cb759babc3e9959c8fa7525e403e307/tlv_lib/calculator_shell_lib.tlv'])
       
    |calc
    
@@ -22,6 +21,7 @@ m4+definitions(['
 
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
+
 
       m4_lab(24, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
@@ -127,6 +127,6 @@ m4+definitions(['
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+hidden_solution(1000)   // Slide number of model to build.
+   m4+main(1000)   // Slide number of model to build.
 \SV_plus
    endmodule
