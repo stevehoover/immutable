@@ -56,11 +56,11 @@ m4+definitions(['
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
-      m4_lab(1, ['Fetch
+      m4_lab(2, ['Fetch (part 2)
       m4_define(['m4_fetch_enable'], 1)
       // just so that M4_NUM_INSTRS can get overwritten later, expression is same
       '])
-      m4_lab(2, ['Instruction Type Decode
+      m4_lab(2, ['Instruction Types Decode
       @1
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
                        $instr[6:2] ==? 5'b001x0 ||
@@ -105,10 +105,10 @@ m4+definitions(['
       m4_define(['m4_decode_enable'], 1)
       m4_define(['m4_decode_stage'], @1)
       '])
-      m4_lab(2, ['Register File Inputs
+      m4_lab(2, ['Register File Read
       m4_define(['m4_regfileio_style'], 1)
       '])
-      m4_lab(1, ['Register File Read
+      m4_lab(1, ['Register File Read (part 2)
       m4_define(['m4_regfileio_style'], 2)
       '])
       m4_lab(1, ['ALU
@@ -122,7 +122,6 @@ m4+definitions(['
       m4_define(['m4_br_stage'], @1)
       '])
       m4_lab(1, ['Branches 2
-      m4_define(['m4_br_enable'], 1)
       m4_define(['m4_pc_style'], 2)
       m4_define(['m4_tgt_stage'], @1)
       '])
@@ -229,9 +228,9 @@ m4+definitions(['
                                        >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
       @0
-         $pc[31:0] = >>1$reset      ?  '0 :
-                     >>1$taken_br   ?  >>1$br_tgt_pc :
-                                       >>1$pc + 32'd4;
+         $pc[31:0]   =  >>1$reset      ?  '0 :
+                        >>1$taken_br   ?  >>1$br_tgt_pc :
+                                          >>1$pc + 32'd4;
       m4_tgt_stage
          $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 3, ['
@@ -306,7 +305,7 @@ m4+definitions(['
          $rs2[4:0]    = $instr[24:20];
          $rd[4:0]     = $instr[11:7];
          $opcode[6:0] = $instr[6:0];
-         `BOGUS_USE($funct7)
+         `BOGUS_USE($funct7 $funct3 $opcode)
       '], m4_fields_style, 2, ['         // Other fields
       @1
          ?$funct7_valid
@@ -320,7 +319,7 @@ m4+definitions(['
          ?$rd_valid
             $rd[4:0]     = $instr[11:7];
          $opcode[6:0]    = $instr[6:0];
-         `BOGUS_USE($funct7)
+         `BOGUS_USE($funct7 $funct3 $opcode $funct3)
       '])
 
       m4_ifelse_block(m4_decode_enable, 1, ['
@@ -340,28 +339,29 @@ m4+definitions(['
 
       m4_ifelse_block(m4_regfileio_style, 1, ['
       @1
-         $rf_wr_en            = '0;
-         $rf_wr_index[4:0]    = '0;
-         $rf_wr_data[31:0]    = '0;
-         $rf_rd_en1           = '0;
-         $rf_rd_en2           = '0;
-         $rf_rd_index1[4:0]   = '0;
-         $rf_rd_index2[4:0]   = '0;
+         $rf_wr_en            =  1'b0;
+         $rf_wr_index[4:0]    =  1'b0;
+         $rf_wr_data[31:0]    =  1'b0;
+         $rf_rd_en1           =  $rs1_valid;
+         $rf_rd_en2           =  $rs2_valid;
+         $rf_rd_index1[4:0]   =  $rs1;
+         $rf_rd_index2[4:0]   =  $rs2;
+      m4+rf(@1, @1)
       '], m4_regfileio_style, 2, ['
       @1
-         $rf_wr_en            = '0;
-         $rf_wr_index[4:0]    = '0;
-         $rf_wr_data[31:0]    = '0;
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = $rf_rd_data1;
-         $src2_value[31:0]    = $rf_rd_data2;
+         $rf_wr_en            =  1'b0;
+         $rf_wr_index[4:0]    =  5'b0;
+         $rf_wr_data[31:0]    =  32'0;
+         $rf_rd_en1           =  $rs1_valid;
+         $rf_rd_en2           =  $rs2_valid;
+         $rf_rd_index1[4:0]   =  $rs1;
+         $rf_rd_index2[4:0]   =  $rs2;
+         $src1_value[31:0]    =  $rf_rd_data1;
+         $src2_value[31:0]    =  $rf_rd_data2;
       m4+rf(@1, @1)
       '], m4_regfileio_style, 3, ['
       @1
-         $rf_wr_en            = $rd_valid;
+         $rf_wr_en            = $rd_valid && $rd!=5'b0;
          $rf_wr_index[4:0]    = $rd;
          $rf_wr_data[31:0]    = $result;
          $rf_rd_en1           = $rs1_valid;
@@ -373,7 +373,7 @@ m4+definitions(['
       m4+rf(@1, @1)
       '], m4_regfileio_style, 4, ['
       @1
-         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
          $rf_wr_index[4:0]    = $rd;
          $rf_wr_data[31:0]    = $result;
          $rf_rd_en1           = $rs1_valid;
@@ -385,7 +385,7 @@ m4+definitions(['
       m4+rf(@1, @1)
       '], m4_regfileio_style, 5, ['
       @3
-         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
          $rf_wr_index[4:0]    = $rd;
          $rf_wr_data[31:0]    = $result;
       @2
@@ -398,7 +398,7 @@ m4+definitions(['
       m4+rf(@2, @3) 
       '], m4_regfileio_style, 6, ['
       @3
-         $rf_wr_en            = $rd_valid && $valid;
+         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
          $rf_wr_index[4:0]    = $rd;
          $rf_wr_data[31:0]    = $result;
       @2
@@ -413,7 +413,7 @@ m4+definitions(['
       m4+rf(@2, @3)
       '], m4_regfileio_style, 7, ['
       @3
-         $rf_wr_en            = ($rd_valid && $valid) || >>2$valid_load;
+         $rf_wr_en            = ($rd_valid && $valid && $rd!=5'b0) || >>2$valid_load;
          $rf_wr_index[4:0]    = >>2$valid_load ? >>2$rd : $rd;
          $rf_wr_data[31:0]    = >>2$valid_load ? >>2$ld_data : $result;
       @2
@@ -506,10 +506,11 @@ m4+definitions(['
       m4_br_stage
          $taken_br   =  ($is_beq  && ($src1_value == $src2_value)) ||
                         ($is_bne  && ($src1_value != $src2_value)) ||
-                        ($is_blt  && (($src1_value < $src2_value) ^ ($src1_value[31]!=$src2_value[31]))) ||
+                        ($is_blt  && (($src1_value < $src2_value)  ^ ($src1_value[31]!=$src2_value[31]))) ||
                         ($is_bge  && (($src1_value >= $src2_value) ^ ($src1_value[31]!=$src2_value[31]))) ||
-                        ($is_bltu && ($src1_value < $src2_value)) ||
+                        ($is_bltu && ($src1_value < $src2_value))  ||
                         ($is_bgeu && ($src1_value >= $src2_value)) ;
+         `BOGUS_USE($taken_br)
       '])
       m4_ifelse_block(m4_valid_style, 1, ['
       @0
