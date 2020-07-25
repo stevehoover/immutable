@@ -120,9 +120,7 @@ m4+definitions(['
    
    
    // Assert these to end simulation (before Makerchip cycle limit).
-   m4_ifelse_block(m4_intermediate, 1, ['
    *passed = *cyc_cnt > 40;
-   '])
    *failed = 1'b0;
 
 
