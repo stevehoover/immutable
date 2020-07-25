@@ -1,5 +1,7 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
+   m4_include_lib(['/raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv'])
+
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
    //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
@@ -10,7 +12,6 @@ m4+definitions(['
 
 '])
 \TLV hidden_solution(_slide_num)
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/shivam/tlv_lib/risc-v_shell_lib.tlv'])
 
    // /====================\
    // | Sum 1 to 9 Program |
