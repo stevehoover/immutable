@@ -5,21 +5,22 @@ m4+definitions(['
    //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
    //m4_define(['m4_stage'], ['m4_ifelse(m4_pipelined, 0, @1, $1)'])
    //m4_define(['m4_pipelined'], 0)
-'])
-      
-\TLV hidden_solution(_slide_num)
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/5cef051241cdf9bbaec6e23fab496f3d2f0ecaa7/tlv_lib/calculator_shell_lib.tlv'])
 
+
+
+'])
+\TLV hidden_solution(_slide_num)
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/f6ad8dd97cb759babc3e9959c8fa7525e403e307/tlv_lib/calculator_shell_lib.tlv'])
+      
+   |calc
+   
       // ============================================================================================================
       // Solutions: Cut this section to provide the shell.
-      
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
       
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
       
-\TLV
-   |calc
       m4_lab(24, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
       '])
@@ -53,7 +54,7 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
-         $val2[31:0] = $rand2[3:0]; m4_ifelse_block(m4_lab_10, 1, ['
+         $val2[31:0] = $rand2[3:0]; m4_ifelse_block(m4_lab_11, 1, ['
          $op1[2:0] = $rand_op[2:0];
          '], m4_lab_6, 1, ['
          $op1[1:0] = $rand_op[1:0];
@@ -64,20 +65,21 @@ m4+definitions(['
          '])
          '])
          m4_ifelse_block(m4_lab_12, 1, ['
+         $mem[31:0] = >>2$out;
+         '])
+         m4_ifelse_block(m4_lab_12, 1, ['
          /mem_array[7:0]
             $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op1 == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
                            $wr         ? |calc$mem :
                                           $RETAIN;
          '])
-         m4_ifelse_block(m4_lab_11, 1, ['
-         $mem[31:0] = >>2$out;
-         '])
+
       m4_ifelse_block(m4_lab_11, 1, ['
       @M4_OUTPUT_STAGE
-         $recall[31:0] = m4_ifelse(m4_lab_12, 1, [''], ['$reset           ? 32'b0 :'])
-                         ($op1 == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$mem :'])
-                                            >>1$recall;
+         $mem[31:0] = m4_ifelse(m4_lab_12, 1, [''], ['$reset           ? 32'b0 :'])
+                         ($op1 == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
+                                            >>2$mem;
          '])
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
@@ -92,7 +94,7 @@ m4+definitions(['
                          ($op1 == m4_ifelse(m4_lab_11, 1, ['3'b001'], m4_lab_10, 1, ['2'b01'])) ? $diff :
                          ($op1 == m4_ifelse(m4_lab_11, 1, ['3'b010'], m4_lab_10, 1, ['2'b10'])) ? $prod :
                          m4_ifelse(m4_lab_11, 1, ['($op1 == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
-                         ($op1 == 3'b100) ? $recall : 32'b0;'])
+                         ($op1 == 3'b100) ? $mem : 32'b0;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
          $sum[31:0] = $val1 + $val2;
@@ -110,8 +112,7 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_9, 1, [''], m4_lab_8, 1, ['
          $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
-
-  //m4+calc_viz(@2)
+   m4+cal_viz(@M4_INPUT_STAGE, @M4_OUTPUT_STAGE)
    
    // ============================================================================================================
    
@@ -126,6 +127,6 @@ m4+definitions(['
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+main(1000)   // Slide number of model to build.
+   m4+hidden_solution(1000)   // Slide number of model to build.
 \SV_plus
    endmodule
