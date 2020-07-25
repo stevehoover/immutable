@@ -1,5 +1,7 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
+   m4_include_lib(['/raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/calculator_shell_lib.tlv'])
+
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
    //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
@@ -17,10 +19,10 @@ m4+definitions(['
       // ============================================================================================================
       // Solutions: Cut this section to provide the shell.
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
-      
+
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
-      
+
       m4_lab(24, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
       '])
