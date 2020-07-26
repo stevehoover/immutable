@@ -53,13 +53,16 @@ m4+definitions(['
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
 
+      m4_define(['m4_rf_rd_stage'], @1)
+      m4_define(['m4_rf_wr_stage'], @1)
+
+
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
       m4_lab(1, ['Fetch (part 1)
       m4_define(['m4_imem_enable'], 1)
-      m4_define(['m4_viz_enable'], 1)
       '])
       m4_lab(1, ['Fetch (part 2)
       m4_define(['m4_fetch_enable'], 1)
@@ -515,11 +518,6 @@ m4+definitions(['
       m4+rf(m4_rf_rd_stage, m4_rf_wr_stage)
       '])
       
-   m4_ifelse_block(m4_viz_enable, 1, ['
-   m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
-                     // @4 would work for all labs
-   '])
-   
    // ============================================================================================================
 
 
