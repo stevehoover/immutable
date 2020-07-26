@@ -57,10 +57,15 @@ m4+definitions(['
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
-      m4_lab(2, ['Fetch (part 2)
+      m4_lab(1, ['Fetch (part 1)
+      m4_define(['m4_imem_enable'], 1)
+      m4_define(['m4_viz_enable'], 1)
+      '])
+      m4_lab(1, ['Fetch (part 2)
       m4_define(['m4_fetch_enable'], 1)
       // just so that M4_NUM_INSTRS can get overwritten later, expression is same
       '])
+
       m4_lab(2, ['Instruction Types Decode
       @1
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
@@ -80,6 +85,7 @@ m4+definitions(['
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
          `BOGUS_USE($is_r_instr $is_i_instr $is_s_instr $is_b_instr $is_u_instr $is_j_instr)
       '])
+
       m4_lab(1, ['Instruction Immediate Decode
       @1
          $imm[31:0]  =  $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
@@ -90,9 +96,11 @@ m4+definitions(['
                                        32'b0 ;
          `BOGUS_USE($is_r_instr)
       '])
+
       m4_lab(1, ['Instruction Decode
       m4_define(['m4_fields_style'], 1)
       '])
+
       m4_lab(1, ['RISC-V Instruction Field Decode
       m4_define(['m4_fields_style'], 2)
       @1
@@ -102,53 +110,78 @@ m4+definitions(['
          $rs2_valid    = $is_r_instr || $is_s_instr || $is_b_instr ;
          $rd_valid     = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
       '])
+
       m4_lab(1, ['Instruction Decode
       m4_define(['m4_decode_enable'], 1)
       m4_define(['m4_decode_stage'], @1)
       '])
+
       m4_lab(2, ['Register File Read
-      m4_define(['m4_regfileio_style'], 1)
+      m4_define(['m4_rf_enable'], 1)
+      m4_define(['m4_rf_rd_stage'], @1)
+      m4_define(['m4_rf_wr_stage'], @1)
+      m4_define(['m4_rf_style'], 1)
+      m4_define(['m4_rf_common_rd'], 1)
       '])
+
       m4_lab(1, ['Register File Read (part 2)
-      m4_define(['m4_regfileio_style'], 2)
+      m4_define(['m4_rf_bypass'], 0)
       '])
+
       m4_lab(1, ['ALU
       m4_define(['m4_alu_style'], 1)
+      m4_define(['m4_alu_stage'], @1)
       '])
+
       m4_lab(2, ['Register File Write
-      m4_define(['m4_regfileio_style'], 3)
+      m4_define(['m4_rf_style'], 2)
       '])
-      m4_lab(2, ['Branches 1
+
+      m4_lab(3, ['Branches 1
       m4_define(['m4_br_enable'], 1)
       m4_define(['m4_br_stage'], @1)
       '])
+
       m4_lab(1, ['Branches 2
       m4_define(['m4_pc_style'], 2)
+      m4_define(['m4_tgt_enable'], 1)
       m4_define(['m4_tgt_stage'], @1)
       '])
+
       m4_lab(1, ['Testbench
       m4_define(['m4_tb_style'], 1)
       '])
+      
       m4_lab(10, ['3-Cycle valid
       m4_define(['m4_valid_style'], 1)
       '])
+
       m4_lab(1, ['3-Cycle RISC-V 1
-      m4_define(['m4_regfileio_style'], 4)
+      m4_define(['m4_rf_style'], 3)
       m4_define(['m4_pc_style'], 3)
+      @1
+         $inc_pc[31:0] = $pc + 32'd4;
+      @3
+         $valid_taken_br = $valid && $taken_br;
       '])
+
       m4_lab(2, ['3-Cycle RISC-V 2
-      m4_define(['m4_regfileio_style'], 5)
+      m4_define(['m4_rf_rd_stage'], @2)
+      m4_define(['m4_rf_wr_stage'], @3)
       m4_define(['m4_tgt_stage'], @2)
-      m4_define(['m4_alu_style'], 2)
+      m4_define(['m4_alu_stage'], @3)
       m4_define(['m4_br_stage'], @3)
       '])
+
       m4_lab(3, ['Register File Bypass
-      m4_define(['m4_regfileio_style'], 6)
+      m4_define(['m4_rf_bypass'], 1)
       '])
+
       m4_lab(3, ['Branches
-      m4_define(['m4_valid_style'], 2)
       m4_define(['m4_pc_style'], 4)
+      m4_define(['m4_valid_style'], 2)
       '])
+
       m4_lab(1, ['Complete Instruction Decode
       m4_define(['m4_decode_stage'], @2)
       @2
@@ -187,17 +220,28 @@ m4+definitions(['
          `BOGUS_USE($is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai)
          `BOGUS_USE($is_sub $is_sll $is_slt $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
       '])
+
       m4_lab(1, ['Complete ALU
-      m4_define(['m4_alu_style'], 3)
+      m4_define(['m4_alu_style'], 2)
+      m4_alu_stage
+         $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
+         $sltiu_rslt[31:0]     =   $src1_value < $imm;
+         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
+         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
       '])
+
       m4_lab(4, ['Redirect Loads
-      m4_define(['m4_pc_style'], 5)
       m4_define(['m4_valid_style'], 3)
+      m4_define(['m4_pc_style'], 5)
+      @3
+         $valid_load = $valid && $is_load;
       '])
+
       m4_lab(1, ['Load Data 1
-      m4_define(['m4_alu_style'], 4)
-      m4_define(['m4_regfileio_style'], 7)
+      m4_define(['m4_alu_style'], 3)
+      m4_define(['m4_rf_style'], 4)
       '])
+
       m4_lab(1, ['Load Data 2
       @4
          $dmem_wr_en          = $is_s_instr && $valid;
@@ -207,8 +251,10 @@ m4+definitions(['
 
       @5
          $ld_data[31:0]       = $dmem_rd_data;
+
       m4+dmem(@4)
       '])
+
       m4_lab(1, ['Load/Store in Program
    m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
    m4_asm(LW, r15, r0, 100)
@@ -216,77 +262,57 @@ m4+definitions(['
    |cpu
       m4_define(['m4_tb_style'], 2)
       '])
+
       m4_lab(2, ['Jumps
       m4_define(['m4_valid_style'], 4)
       m4_define(['m4_pc_style'], 6)
+
+      m4_tgt_stage
+         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
+
+      @3
+         $is_jump    =  $is_jal || $is_jalr;
+         $valid_jump =  $is_jump && $valid;
       '])
 
+
+
       // Logic that changes throughout.
-      m4_ifelse_block(m4_pc_style, 1, ['
+
+      
       @0
-         // Lab : Next PC (6)
-         $pc[31:0]  =   >>1$reset   ?  32'b0 : 
+      m4_ifelse_block(m4_pc_style, 1, ['
+         $pc[31:0]   =  >>1$reset   ?  32'b0 : 
                                        >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
-      @0
          $pc[31:0]   =  >>1$reset      ?  '0 :
                         >>1$taken_br   ?  >>1$br_tgt_pc :
                                           >>1$pc + 32'd4;
-      m4_tgt_stage
-         $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 3, ['
-      @1
-         $inc_pc[31:0] = $pc + 32'd4;
-      @3
-         $valid_taken_br = $valid && $taken_br;
-      @0
          $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>3$inc_pc ;
-      m4_tgt_stage
-         $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 4, ['
-      @1
-         $inc_pc[31:0] = $pc + 32'd4;
-      @3
-         $valid_taken_br = $valid && $taken_br;
-      @0
          $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                                                 >>1$inc_pc ;
-      m4_tgt_stage
-         $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 5, ['
-      @1
-         $inc_pc[31:0] = $pc + 32'd4;
-      @3
-         $valid_load       = $valid && $is_load;
-         $valid_taken_br   = $valid && $taken_br;
-      @0
          $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc :
                         >>3$valid_load       ?  >>3$inc_pc    :
                                                 >>1$inc_pc ;
-      m4_tgt_stage
-         $br_tgt_pc[31:0] = $pc + $imm;
       '], m4_pc_style, 6, ['
-      @1
-         $inc_pc[31:0] = $pc + 32'd4;
-      @3
-         $valid_load       = $valid && $is_load;
-         $valid_taken_br   = $valid && $taken_br;
-         $is_jump    =  $is_jal || $is_jalr;
-         $valid_jump =  $is_jump && $valid;
-      @0
          $pc[31:0]   =  >>1$reset            ?  '0 :
                         >>3$valid_taken_br   ?  >>3$br_tgt_pc   :
                         >>3$valid_load       ?  >>3$inc_pc      :
                         >>2$is_jal           ?  >>3$br_tgt_pc   :
                         >>2$is_jalr          ?  >>3$jalr_tgt_pc :
                                                 >>1$inc_pc ;
+      '])
+
+      m4_ifelse(m4_tgt_enable, 1, ['
       m4_tgt_stage
-         $br_tgt_pc[31:0]     =  $pc + $imm;
-         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
+         $br_tgt_pc[31:0] = $pc + $imm;
       '])
       
       m4_ifelse_block(m4_fetch_enable, 1, ['
@@ -295,7 +321,6 @@ m4+definitions(['
          $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
          $instr[31:0]                         = $imem_rd_data[31:0];
          `BOGUS_USE($instr)
-      m4+imem(@1)
       '])
 
       m4_ifelse_block(m4_fields_style, 1, ['
@@ -338,109 +363,52 @@ m4+definitions(['
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
       '])
 
-      m4_ifelse_block(m4_regfileio_style, 1, ['
-      @1
-         $rf_wr_en            =  1'b0;
-         $rf_wr_index[4:0]    =  1'b0;
-         $rf_wr_data[31:0]    =  1'b0;
+      m4_rf_rd_stage
+      m4_ifelse_block(m4_rf_common_rd, 1, ['
          $rf_rd_en1           =  $rs1_valid;
          $rf_rd_en2           =  $rs2_valid;
          $rf_rd_index1[4:0]   =  $rs1;
          $rf_rd_index2[4:0]   =  $rs2;
-      m4+rf(@1, @1)
-      '], m4_regfileio_style, 2, ['
-      @1
-         $rf_wr_en            =  1'b0;
-         $rf_wr_index[4:0]    =  5'b0;
-         $rf_wr_data[31:0]    =  32'0;
-         $rf_rd_en1           =  $rs1_valid;
-         $rf_rd_en2           =  $rs2_valid;
-         $rf_rd_index1[4:0]   =  $rs1;
-         $rf_rd_index2[4:0]   =  $rs2;
+      '])
+
+      m4_ifelse_block(m4_rf_enable, 1, ['
+      m4_ifelse_block(m4_rf_bypass, 0, ['
          $src1_value[31:0]    =  $rf_rd_data1;
          $src2_value[31:0]    =  $rf_rd_data2;
-      m4+rf(@1, @1)
-      '], m4_regfileio_style, 3, ['
-      @1
-         $rf_wr_en            = $rd_valid && $rd!=5'b0;
-         $rf_wr_index[4:0]    = $rd;
-         $rf_wr_data[31:0]    = $result;
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = $rf_rd_data1;
-         $src2_value[31:0]    = $rf_rd_data2;
-      m4+rf(@1, @1)
-      '], m4_regfileio_style, 4, ['
-      @1
-         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
-         $rf_wr_index[4:0]    = $rd;
-         $rf_wr_data[31:0]    = $result;
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = $rf_rd_data1;
-         $src2_value[31:0]    = $rf_rd_data2;
-      m4+rf(@1, @1)
-      '], m4_regfileio_style, 5, ['
-      @3
-         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
-         $rf_wr_index[4:0]    = $rd;
-         $rf_wr_data[31:0]    = $result;
-      @2
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = $rf_rd_data1;
-         $src2_value[31:0]    = $rf_rd_data2;  
-      m4+rf(@2, @3) 
-      '], m4_regfileio_style, 6, ['
-      @3
-         $rf_wr_en            = $rd_valid && $rd!=5'b0 && $valid;
-         $rf_wr_index[4:0]    = $rd;
-         $rf_wr_data[31:0]    = $result;
-      @2
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+      '], m4_rf_bypass, 1, ['
+         $src1_value[31:0]    =  (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?  >>1$result   :
                                                                                                          $rf_rd_data1 ;
-         $src2_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
+         $src2_value[31:0]    =  (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?  >>1$result   :
                                                                                                          $rf_rd_data2 ;
-      m4+rf(@2, @3)
-      '], m4_regfileio_style, 7, ['
-      @3
-         $rf_wr_en            = ($rd_valid && $valid && $rd!=5'b0) || >>2$valid_load;
-         $rf_wr_index[4:0]    = >>2$valid_load ? >>2$rd : $rd;
-         $rf_wr_data[31:0]    = >>2$valid_load ? >>2$ld_data : $result;
-      @2
-         $rf_rd_en1           = $rs1_valid;
-         $rf_rd_en2           = $rs2_valid;
-         $rf_rd_index1[4:0]   = $rs1;
-         $rf_rd_index2[4:0]   = $rs2;
-         $src1_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
-                                                                                                         $rf_rd_data1 ;
-         $src2_value[31:0]    = (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?   >>1$result   :
-                                                                                                         $rf_rd_data2 ;
-      m4+rf(@2, @3)
+      '])
+      '])
+
+      m4_rf_wr_stage
+      m4_ifelse_block(m4_rf_style, 1, ['
+         $rf_wr_en            =  1'b0;
+         $rf_wr_index[4:0]    =  5'b0;
+         $rf_wr_data[31:0]    =  32'b0;
+      '], m4_rf_style, 2, ['
+         $rf_wr_en            =  $rd_valid && $rd!=5'b0;
+         $rf_wr_index[4:0]    =  $rd;
+         $rf_wr_data[31:0]    =  $result;
+      '], m4_rf_style, 3, ['
+         $rf_wr_en            =  $rd_valid && $rd!=5'b0 && $valid;
+         $rf_wr_index[4:0]    =  $rd;
+         $rf_wr_data[31:0]    =  $result;
+      '], m4_rf_style, 4, ['
+         $rf_wr_en            =  ($rd_valid && $valid && $rd!=5'b0) || >>2$valid_load;
+         $rf_wr_index[4:0]    =  >>2$valid_load ? >>2$rd : $rd;
+         $rf_wr_data[31:0]    =  >>2$valid_load ? >>2$ld_data : $result;
       '])
 
       m4_ifelse_block(m4_alu_style, 1, ['
-      @1
+      m4_alu_stage
          $result[31:0] =   $is_addi ?  $src1_value + $imm :
                            $is_add  ?  $src1_value + $src2_value :
                                        32'bx;
       '], m4_alu_style, 2, ['
-      @3
-         $result[31:0] =   $is_addi ?  $src1_value + $imm :
-                           $is_add  ?  $src1_value + $src2_value :
-                                       32'bx;
-      '], m4_alu_style, 3, ['
-      @3
+      m4_alu_stage
          $result[31:0] =   $is_andi    ?  $src1_value & $imm :
                            $is_ori     ?  $src1_value | $imm :
                            $is_xori    ?  $src1_value ^ $imm :
@@ -466,12 +434,8 @@ m4+definitions(['
                            $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
                                           32'bx;
          
-         $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
-         $sltiu_rslt[31:0]     =   $src1_value < $imm;
-         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
-         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
-      '], m4_alu_style, 4, ['
-      @3
+      '], m4_alu_style, 3, ['
+      m4_alu_stage
          $result[31:0] =   $is_andi    ?  $src1_value & $imm :
                            $is_ori     ?  $src1_value | $imm :
                            $is_xori    ?  $src1_value ^ $imm :
@@ -495,12 +459,7 @@ m4+definitions(['
                            $is_slt     ?  $slt_int_rslt :
                            $is_slti    ?  $slti_int_rslt :
                            $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
-                                          32'bx;
-         
-         $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
-         $sltiu_rslt[31:0]     =   $src1_value < $imm;
-         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
-         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
+                                          32'bx;         
       '])
 
       m4_ifelse_block(m4_br_enable, 1, ['
@@ -513,6 +472,7 @@ m4+definitions(['
                         ($is_bgeu && ($src1_value >= $src2_value)) ;
          `BOGUS_USE($taken_br)
       '])
+
       m4_ifelse_block(m4_valid_style, 1, ['
       @0
          $start = >>1$reset && !$reset;
@@ -521,19 +481,16 @@ m4+definitions(['
                            >>3$valid ;
       '], m4_valid_style, 2, ['
       @3
-         $valid = !($reset || 
-                  >>1$valid_taken_br || >>2$valid_taken_br);
+         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br);
       '], m4_valid_style, 3, ['
       @3
-         $valid = !($reset || 
-                  >>1$valid_taken_br || >>2$valid_taken_br ||
-                  >>1$valid_load || >>2$valid_load);
+         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br ||
+                    >>1$valid_load     || >>2$valid_load);
       '], m4_valid_style, 4, ['
       @3
-         $valid = !($reset || 
-                  >>1$valid_taken_br || >>2$valid_taken_br ||
-                  >>1$valid_load || >>2$valid_load ||
-                  $valid_jump);
+         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br ||
+                   >>1$valid_load      || >>2$valid_load     ||
+                   $valid_jump);
       '])
       
       @1
@@ -544,11 +501,27 @@ m4+definitions(['
          '], ['
          *passed = *cyc_cnt > 40;
          '])
-         *failed = 1'b0;
+   
+   
+   *failed = 1'b0;
+
+   |cpu
+      m4_ifelse_block(m4_imem_enable, 1, ['
+      m4+imem(@1)    // Args: (read stage)
+      '])
       
+      // Args: (read stage, write stage) - if equal, no register bypass is required
+      m4_ifelse_block(m4_rf_enable, 1, ['
+      m4+rf(m4_rf_rd_stage, m4_rf_wr_stage)
+      '])
+      
+   m4_ifelse_block(m4_viz_enable, 1, ['
+   m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic
+                     // @4 would work for all labs
+   '])
    
    // ============================================================================================================
-   
+
 
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
