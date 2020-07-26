@@ -1,0 +1,29 @@
+Delta     Count        Title
+
+  6         6        Next PC
+  1         7        Fetch (part 1)
+  1         8        Fetch (part 2)
+  2         10       Instruction Types Decode
+  1         11       Instruction Immediate Decode
+  1         12       Instruction Decode
+  1         13       RISC-V Instruction Field Decode
+  1         14       Instruction Decode
+  2         16       Register File Read
+  1         17       Register File Read (part 2)
+  1         18       ALU
+  2         20       Register File Write
+  3         23       Branches 1
+  1         24       Branches 2
+  1         25       Testbench
+ 10         35       3-Cycle valid
+  1         36       3-Cycle RISC-V 1
+  2         38       3-Cycle RISC-V 2
+  3         41       Register File Bypass
+  3         44       Branches
+  1         45       Complete Instruction Decode
+  1         46       Complete ALU
+  4         50       Redirect Loads
+  1         51       Load Data 1
+  1         52       Load Data 2
+  1         53       Load/Store in Program
+  2         55       Jumps
