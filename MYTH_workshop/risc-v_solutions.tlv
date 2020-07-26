@@ -53,6 +53,10 @@ m4+definitions(['
       m4_define(['m4_slide'], _slide_num)  // Build core for this slide
       m4_define(['m4_slide_cnt'], 0)  // Increments by the given number of slides for each lab.
 
+      m4_define(['m4_rf_rd_stage'], @1)
+      m4_define(['m4_rf_wr_stage'], @1)
+
+
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
       m4_lab(6, ['Next PC
       m4_define(['m4_pc_style'], 1)
