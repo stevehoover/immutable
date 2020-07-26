@@ -43,7 +43,7 @@ m4+definitions(['
       @0
          $reset = *reset;
       
-      
+         $unused_sig = 1'b0;  // Just testing...
       
       
       
