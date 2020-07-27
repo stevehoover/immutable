@@ -527,4 +527,4 @@ m4+definitions(['
    
    // HACK ALERT!!!: To avoid updates to hidden Makerchip files, this file now supports calculator solutions as well with definition of M4_CALCULATOR.
    // Called at the end because it overrides macros in this file.
-   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])'])
+   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'], [''], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])'])
