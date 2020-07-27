@@ -7,7 +7,7 @@ m4+definitions(['
    //m4_define(['m4_stage'], ['m4_ifelse(m4_pipelined, 0, @1, $1)'])
    //m4_define(['m4_pipelined'], 0)
       
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv']000)
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv'])
 
 '])
 \TLV hidden_solution(_slide_num)
