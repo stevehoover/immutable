@@ -1,6 +1,5 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv'])
 
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
@@ -8,11 +7,11 @@ m4+definitions(['
    //m4_define(['m4_stage'], ['m4_ifelse(m4_pipelined, 0, @1, $1)'])
    //m4_define(['m4_pipelined'], 0)
       
-      
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv']000)
 
 '])
 \TLV hidden_solution(_slide_num)
-
+   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'],
    // /====================\
    // | Sum 1 to 9 Program |
    // \====================/
@@ -518,10 +517,14 @@ m4+definitions(['
       
    // ============================================================================================================
 
-
+   '])
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
    m4+main(1000)   // Slide number of model to build.
 \SV_plus
    endmodule
+   
+   // HACK ALERT!!!: To avoid updates to hidden Makerchip files, this file now supports calculator solutions as well with definition of M4_CALCULATOR.
+   // Called at the end because it overrides macros in this file.
+   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])'])
