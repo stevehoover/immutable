@@ -11,7 +11,6 @@ m4+definitions(['
 
 '])
 \TLV hidden_solution(_slide_num)
-   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'],
    // /====================\
    // | Sum 1 to 9 Program |
    // \====================/
@@ -517,12 +516,11 @@ m4+definitions(['
       
    // ============================================================================================================
 
-   '])
-\SV_plus
+\SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
    m4+main(1000)   // Slide number of model to build.
-\SV_plus
+\SV
    endmodule
    
    // HACK ALERT!!!: To avoid updates to hidden Makerchip files, this file now supports calculator solutions as well with definition of M4_CALCULATOR.
