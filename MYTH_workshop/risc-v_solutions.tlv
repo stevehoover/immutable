@@ -7,7 +7,7 @@ m4+definitions(['
    //m4_define(['m4_stage'], ['m4_ifelse(m4_pipelined, 0, @1, $1)'])
    //m4_define(['m4_pipelined'], 0)
       
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv'])
+   m4_ifelse(M4_CALCULATOR, ['M4_CALCULATOR'], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/risc-v_shell_lib.tlv'])'], [''])
 
 '])
 \TLV hidden_solution(_slide_num)
@@ -525,4 +525,4 @@ m4+definitions(['
    
    // HACK ALERT!!!: To avoid updates to hidden Makerchip files, this file now supports calculator solutions as well with definition of M4_CALCULATOR.
    // Called at the end because it overrides macros in this file.
-   m4_ifelse_block(M4_CALCULATOR, ['M4_CALCULATOR'], [''], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])'])
+   m4_ifelse(M4_CALCULATOR, ['M4_CALCULATOR'], [''], ['m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])'])
