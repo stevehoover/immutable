@@ -109,7 +109,7 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_9, 1, [''], m4_lab_8, 1, ['
          $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
-   m4+cal_viz(@M4_INPUT_STAGE, @M4_OUTPUT_STAGE)
+   m4+cal_viz(@M4_OUTPUT_STAGE)
    
    // ============================================================================================================
    
