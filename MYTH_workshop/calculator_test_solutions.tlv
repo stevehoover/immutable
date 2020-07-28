@@ -11,7 +11,6 @@
    // stimulus support, and Verilator config.
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/calculator_shell_lib.tlv'])
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/calculator_solutions.tlv'])
 \TLV
    $reset = *reset;
