@@ -55,11 +55,7 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
-         $val2[31:0] = $rand2[3:0]; m4_ifelse_block(m4_lab_11, 1, ['
-         $op1[2:0] = $rand_op[2:0];
-         '], m4_lab_6, 1, ['
-         $op1[1:0] = $rand_op[1:0];
-         '])
+         $val2[31:0] = $rand2[3:0];
          m4_ifelse_block(m4_lab_10, 1, ['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;
          $reset_or_valid = $valid || $reset;
@@ -70,7 +66,7 @@ m4+definitions(['
          '])
          m4_ifelse_block(m4_lab_12, 1, ['
          /mem_array[7:0]
-            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op1 == 3'b101) && |calc$valid;
+            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
                            $wr         ? |calc$mem :
                                           $RETAIN;
@@ -79,7 +75,7 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_11, 1, ['
       @M4_OUTPUT_STAGE
          $mem[31:0] = m4_ifelse(m4_lab_12, 1, [''], ['$reset           ? 32'b0 :'])
-                         ($op1 == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
+                         ($op == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
                                             >>2$mem;
          '])
       m4_ifelse_block(m4_lab_10, 1, ['
@@ -91,11 +87,11 @@ m4+definitions(['
             $quot[31:0] = $val1 / $val2;
          @M4_OUTPUT_STAGE
             $out[31:0] = $reset           ? 32'b0 :
-                         ($op1 == m4_ifelse(m4_lab_11, 1, ['3'b000'], m4_lab_10, 1, ['2'b00'])) ? $sum  :
-                         ($op1 == m4_ifelse(m4_lab_11, 1, ['3'b001'], m4_lab_10, 1, ['2'b01'])) ? $diff :
-                         ($op1 == m4_ifelse(m4_lab_11, 1, ['3'b010'], m4_lab_10, 1, ['2'b10'])) ? $prod :
-                         m4_ifelse(m4_lab_11, 1, ['($op1 == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
-                         ($op1 == 3'b100) ? $mem : 32'b0;'])
+                         ($op == m4_ifelse(m4_lab_11, 1, ['3'b000'], m4_lab_10, 1, ['2'b00'])) ? $sum  :
+                         ($op == m4_ifelse(m4_lab_11, 1, ['3'b001'], m4_lab_10, 1, ['2'b01'])) ? $diff :
+                         ($op == m4_ifelse(m4_lab_11, 1, ['3'b010'], m4_lab_10, 1, ['2'b10'])) ? $prod :
+                         m4_ifelse(m4_lab_11, 1, ['($op == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
+                         ($op == 3'b100) ? $mem : 32'b0;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
          $sum[31:0] = $val1 + $val2;
@@ -106,10 +102,10 @@ m4+definitions(['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;'])
       @M4_OUTPUT_STAGE
          $out[31:0] = m4_ifelse(m4_lab_9, 1, ['$reset || !$valid'], m4_lab_6, 1, ['$reset']) ? 32'b0 :
-                        ($op1 == 2'b00) ? $sum  :
-                        ($op1 == 2'b01) ? $diff :
-                        ($op1 == 2'b10) ? $prod :
-                                          $quot;
+                        ($op == 2'b00) ? $sum  :
+                        ($op == 2'b01) ? $diff :
+                        ($op == 2'b10) ? $prod :
+                                         $quot;
          m4_ifelse_block(m4_lab_9, 1, [''], m4_lab_8, 1, ['
          $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
