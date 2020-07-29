@@ -225,8 +225,6 @@ m4+definitions(['
       m4_alu_stage
          $sltu_rslt[31:0]      =   $src1_value < $src2_value ;
          $sltiu_rslt[31:0]     =   $src1_value < $imm;
-         $slt_int_rslt[31:0]   =   ($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]};
-         $slti_int_rslt[31:0]  =   ($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]};
       '])
 
       m4_lab(4, ['Redirect Loads
@@ -428,8 +426,8 @@ m4+definitions(['
                            $is_jal     ?  $pc + 32'd4 :
                            $is_jalr    ?  $pc + 32'd4 :
                            $is_srai    ?  {{32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
-                           $is_slt     ?  $slt_int_rslt :
-                           $is_slti    ?  $slti_int_rslt :
+                           $is_slt     ?  (($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]}) :
+                           $is_slti    ?  (($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]}) :
                            $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
                                           32'bx;
          
@@ -455,8 +453,8 @@ m4+definitions(['
                            $is_jal     ?  $pc + 32'd4 :
                            $is_jalr    ?  $pc + 32'd4 :
                            $is_srai    ?  {{32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
-                           $is_slt     ?  $slt_int_rslt :
-                           $is_slti    ?  $slti_int_rslt :
+                           $is_slt     ?  (($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]}) :
+                           $is_slti    ?  (($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]}) :
                            $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
                                           32'bx;         
       '])
