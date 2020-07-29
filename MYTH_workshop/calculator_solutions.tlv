@@ -55,11 +55,7 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
-         $val2[31:0] = $rand2[3:0]; m4_ifelse_block(m4_lab_11, 1, ['
-         $op[2:0] = $rand_op[2:0];
-         '], m4_lab_6, 1, ['
-         $op[1:0] = $rand_op[1:0];
-         '])
+         $val2[31:0] = $rand2[3:0];
          m4_ifelse_block(m4_lab_10, 1, ['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;
          $reset_or_valid = $valid || $reset;
