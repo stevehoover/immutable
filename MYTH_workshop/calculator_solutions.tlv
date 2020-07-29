@@ -1,6 +1,6 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/calculator_shell_lib.tlv'])
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/vineet/tlv_lib/calculator_shell_lib.tlv'])
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
    //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
@@ -22,7 +22,7 @@ m4+definitions(['
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
 
 
-      m4_lab(24, ['Sequential Calculator
+      m4_lab(25, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
       '])
       m4_lab(12, ['Counter and Calculator in Pipeline
@@ -55,7 +55,11 @@ m4+definitions(['
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
-         $val2[31:0] = $rand2[3:0];
+         $val2[31:0] = $rand2[3:0]; m4_ifelse_block(m4_lab_11, 1, ['
+         $op[2:0] = $rand_op[2:0];
+         '], m4_lab_6, 1, ['
+         $op[1:0] = $rand_op[1:0];
+         '])
          m4_ifelse_block(m4_lab_10, 1, ['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;
          $reset_or_valid = $valid || $reset;
