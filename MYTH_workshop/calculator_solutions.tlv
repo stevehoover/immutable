@@ -52,7 +52,6 @@ m4+definitions(['
       m4_define(['M4_OUTPUT_STAGE'], 0)'])
       
    |calc
-      @0
       @M4_INPUT_STAGE
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
@@ -81,7 +80,7 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
          @M4_INPUT_STAGE
-            `BOGUS_USE($op[m4_ifelse(m4_lab_11, 1, ['2'], m4_lab_10, 1, ['1']):0])
+            m4_rand($op, m4_ifelse(m4_lab_11, 1, ['2'], ['1']), 0)
             $sum[31:0] = $val1 + $val2;
             $diff[31:0] = $val1 - $val2;
             $prod[31:0] = $val1 * $val2;
@@ -95,7 +94,7 @@ m4+definitions(['
                          ($op == 3'b100) ? $mem : 32'b0;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
-         `BOGUS_USE($op[1:0])
+         m4_rand($op, 1, 0)
          $sum[31:0] = $val1 + $val2;
          $diff[31:0] = $val1 - $val2;
          $prod[31:0] = $val1 * $val2;
