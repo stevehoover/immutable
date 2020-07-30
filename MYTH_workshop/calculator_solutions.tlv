@@ -66,7 +66,7 @@ m4+definitions(['
 
          m4_ifelse_block(m4_lab_12, 1, ['
          /mem_array[7:0]
-            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op == 3'b101) && |calc$valid;
+            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op[2:0] == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
                            $wr         ? |calc>>2$out :
                                           $RETAIN;
@@ -75,12 +75,13 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_11, 1, ['
       @M4_OUTPUT_STAGE
          $mem[31:0] = m4_ifelse(m4_lab_12, 1, [''], ['$reset           ? 32'b0 :'])
-                         ($op == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
+                         ($op[2:0] == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
                                             >>2$mem;
          '])
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
          @M4_INPUT_STAGE
+            `BOGUS_USE($op[m4_ifelse(m4_lab_11, 1, ['3'], m4_lab_10, 1, ['2']):0])
             $sum[31:0] = $val1 + $val2;
             $diff[31:0] = $val1 - $val2;
             $prod[31:0] = $val1 * $val2;
