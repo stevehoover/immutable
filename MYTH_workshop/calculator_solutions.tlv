@@ -51,10 +51,11 @@ m4+definitions(['
       m4_define(['M4_OUTPUT_STAGE'], 1)'], m4_lab_6, 1, ['
       m4_define(['M4_OUTPUT_STAGE'], 0)'])
       
-      @M4_INPUT_STAGE
+      @0
          m4_ifelse_block(m4_lab_11, 1, [''], ['
          m4_rand($op, 1, 0)
          '])
+      @M4_INPUT_STAGE
          m4_ifelse_block(m4_lab_6, 1, ['
          $reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
