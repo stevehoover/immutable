@@ -18,7 +18,7 @@ D4SK3
   1         17         17         2            Register File Read (part 2)
   1         18         18         3            ALU
   2         20         20         4            Register File Write
-  3         23         21         6            Branches 1
+  3         23         21         6  0          Branches 1
   1         24         22         7            Branches 2
   1         25         25         8            Testbench
 
@@ -42,6 +42,3 @@ D5
 * D4SK2 is only upto decode, not execute
 * Slide 10 repeated
 * Repo can be made private - GH gives a token to access raw in the link
-* D4SK3_L4 video unavailable!
-* SK3_L7 shows 5:45 total but ends at 2:52 - source of confusion (video is complete I think)
- 
