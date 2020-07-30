@@ -38,10 +38,10 @@ D5
   2         54         53                     Jumps
 
 
-* L2 has 2 labs with respect to our code - merge em!
-* D4SK2 is only upto decode, not execute
-* Slide 10 repeated
-* Repo can be made private - GH gives a token to access raw in the link
-* D4SK3_L4 video unavailable!
-* SK3_L7 shows 5:45 total but ends at 2:52 - source of confusion (video is complete I think)
+* L2 has 2 labs with respect to our code - merge em! - SH: Yes, just provide 1 solution including both.
+* D4SK2 is only upto decode, not execute - SH: ?
+* Slide 10 repeated - SFH: Okay, just provide 1 solution with both.
+* Repo can be made private - GH gives a token to access raw in the link - Oh, cool! (but, don't worry about it)
+* D4SK3_L4 video unavailable! - SH: !!!
+* SK3_L7 shows 5:45 total but ends at 2:52 - source of confusion (video is complete I think) - SH: !!!
  
