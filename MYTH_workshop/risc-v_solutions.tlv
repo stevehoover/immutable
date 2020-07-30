@@ -168,7 +168,7 @@ m4+definitions(['
          $valid_taken_br = $valid && $taken_br;
       '])
 
-      m4_lab(2, ['3-Cycle RISC-V 2
+      m4_lab(1, ['3-Cycle RISC-V 2
       m4_define(['m4_rf_rd_stage'], @2)
       m4_define(['m4_rf_wr_stage'], @3)
       m4_define(['m4_tgt_stage'], @2)
