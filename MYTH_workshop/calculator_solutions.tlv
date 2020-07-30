@@ -51,11 +51,6 @@ m4+definitions(['
       m4_define(['M4_OUTPUT_STAGE'], 1)'], m4_lab_6, 1, ['
       m4_define(['M4_OUTPUT_STAGE'], 0)'])
       
-   |tb
-      @0
-         /default
-            m4_rand($op, m4_ifelse(m4_lab_11, 1, 2, 1), 0)
-            `BOGUS_USE($op)
    |calc
       @0
       @M4_INPUT_STAGE
