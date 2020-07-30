@@ -69,8 +69,9 @@ m4+definitions(['
       // just so that M4_NUM_INSTRS can get overwritten later, expression is same
       '])
 
-      m4_lab(2, ['Instruction Types Decode
+      m4_lab(2, ['Instruction Types Decode and Immediate Decode
       @1
+         // Types
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
                        $instr[6:2] ==? 5'b001x0 ||
                        $instr[6:2] ==  5'b11001 ;
@@ -86,11 +87,10 @@ m4+definitions(['
          $is_j_instr = $instr[6:2] ==  5'b11011;
          
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
+         
          `BOGUS_USE($is_r_instr $is_i_instr $is_s_instr $is_b_instr $is_u_instr $is_j_instr)
-      '])
 
-      m4_lab(1, ['Instruction Immediate Decode
-      @1
+         // Immediate
          $imm[31:0]  =  $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
                         $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:7]} :
                         $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
@@ -119,7 +119,7 @@ m4+definitions(['
       m4_define(['m4_decode_stage'], @1)
       '])
 
-      m4_lab(2, ['Register File Read
+      m4_lab(3, ['Register File Read
       m4_define(['m4_rf_enable'], 1)
       m4_define(['m4_rf_rd_stage'], @1)
       m4_define(['m4_rf_wr_stage'], @1)
@@ -140,7 +140,7 @@ m4+definitions(['
       m4_define(['m4_rf_style'], 2)
       '])
 
-      m4_lab(3, ['Branches 1
+      m4_lab(1, ['Branches 1
       m4_define(['m4_br_enable'], 1)
       m4_define(['m4_br_stage'], @1)
       '])
@@ -151,15 +151,15 @@ m4+definitions(['
       m4_define(['m4_tgt_stage'], @1)
       '])
 
-      m4_lab(1, ['Testbench
+      m4_lab(3, ['Testbench
       m4_define(['m4_tb_style'], 1)
       '])
       
-      m4_lab(10, ['3-Cycle valid
+      m4_lab(8, ['3-Cycle valid
       m4_define(['m4_valid_style'], 1)
       '])
 
-      m4_lab(1, ['3-Cycle RISC-V 1
+      m4_lab(3, ['3-Cycle RISC-V 1
       m4_define(['m4_rf_style'], 3)
       m4_define(['m4_pc_style'], 3)
       @1
@@ -176,7 +176,7 @@ m4+definitions(['
       m4_define(['m4_br_stage'], @3)
       '])
 
-      m4_lab(3, ['Register File Bypass
+      m4_lab(2, ['Register File Bypass
       m4_define(['m4_rf_bypass'], 1)
       '])
 
@@ -185,7 +185,7 @@ m4+definitions(['
       m4_define(['m4_valid_style'], 2)
       '])
 
-      m4_lab(1, ['Complete Instruction Decode
+      m4_lab(2, ['Complete Instruction Decode
       m4_define(['m4_decode_stage'], @2)
       @2
          $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
@@ -231,7 +231,7 @@ m4+definitions(['
          $sltiu_rslt[31:0]     =   $src1_value < $imm;
       '])
 
-      m4_lab(4, ['Redirect Loads
+      m4_lab(3, ['Redirect Loads
       m4_define(['m4_valid_style'], 3)
       m4_define(['m4_pc_style'], 5)
       @3
@@ -243,7 +243,7 @@ m4+definitions(['
       m4_define(['m4_rf_style'], 4)
       '])
 
-      m4_lab(1, ['Load Data 2
+      m4_lab(2, ['Load Data 2
       @4
          $dmem_wr_en          = $is_s_instr && $valid;
          $dmem_wr_data[31:0]  = $src2_value;
@@ -264,7 +264,7 @@ m4+definitions(['
       m4_define(['m4_tb_style'], 2)
       '])
 
-      m4_lab(2, ['Jumps
+      m4_lab(1, ['Jumps
       m4_define(['m4_valid_style'], 4)
       m4_define(['m4_pc_style'], 6)
 
