@@ -81,7 +81,7 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
          @M4_INPUT_STAGE
-            `BOGUS_USE($op[m4_ifelse(m4_lab_11, 1, ['3'], m4_lab_10, 1, ['2']):0])
+            `BOGUS_USE($op[m4_ifelse(m4_lab_11, 1, ['2'], m4_lab_10, 1, ['1']):0])
             $sum[31:0] = $val1 + $val2;
             $diff[31:0] = $val1 - $val2;
             $prod[31:0] = $val1 * $val2;
