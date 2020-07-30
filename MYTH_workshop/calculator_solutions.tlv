@@ -31,13 +31,13 @@ m4+definitions(['
       m4_lab(1, ['Cycle Calculator
       m4_define(['m4_lab_9'], 1)
       '])
-      m4_lab(4, ['Cycle Calculator with Validity
+      m4_lab(5, ['Cycle Calculator with Validity
       m4_define(['m4_lab_10'], 1)
       '])
-      m4_lab(1, ['Calculator with Single-Value Memory
+      m4_lab(2, ['Calculator with Single-Value Memory
       m4_define(['m4_lab_11'], 1)
       '])
-      m4_lab(15, ['Calculator with Memory
+      m4_lab(25, ['Calculator with Memory
       m4_define(['m4_lab_12'], 1)
       '])
       
