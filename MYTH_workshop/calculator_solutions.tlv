@@ -22,7 +22,7 @@ m4+definitions(['
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
 
 
-      m4_lab(25, ['Sequential Calculator
+      m4_lab(23, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
       '])
       m4_lab(12, ['Counter and Calculator in Pipeline
@@ -61,9 +61,7 @@ m4+definitions(['
          $reset_or_valid = $valid || $reset;
          '])
          '])
-         m4_ifelse_block(m4_lab_12, 1, ['
-         $mem[31:0] = >>2$out;
-         '])
+
          m4_ifelse_block(m4_lab_12, 1, ['
          /mem_array[7:0]
             $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op == 3'b101) && |calc$valid;
