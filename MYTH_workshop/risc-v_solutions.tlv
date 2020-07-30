@@ -69,17 +69,17 @@ m4+definitions(['
       @1
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
                        $instr[6:2] ==? 5'b001x0 ||
-                       $instr[6:2] ==  5'b11001 ;
+                       $instr[6:2] ==? 5'b11001 ;
          
-         $is_r_instr = $instr[6:2] ==  5'b01011 ||
+         $is_r_instr = $instr[6:2] ==? 5'b01011 ||
                        $instr[6:2] ==? 5'b011x0 ||
-                       $instr[6:2] ==  5'b10100 ;
+                       $instr[6:2] ==? 5'b10100 ;
          
          $is_s_instr = $instr[6:2] ==? 5'b0100x;
          
-         $is_b_instr = $instr[6:2] ==  5'b11000;
+         $is_b_instr = $instr[6:2] ==? 5'b11000;
          
-         $is_j_instr = $instr[6:2] ==  5'b11011;
+         $is_j_instr = $instr[6:2] ==? 5'b11011;
          
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
          `BOGUS_USE($is_r_instr $is_i_instr $is_s_instr $is_b_instr $is_u_instr $is_j_instr)
@@ -373,10 +373,14 @@ m4+definitions(['
          $src1_value[31:0]    =  $rf_rd_data1;
          $src2_value[31:0]    =  $rf_rd_data2;
       '], m4_rf_bypass, 1, ['
-         $src1_value[31:0]    =  (>>1$rf_wr_index == $rf_rd_index1) && /xreg[>>1$rf_wr_index]>>1$wr   ?  >>1$result   :
-                                                                                                         $rf_rd_data1 ;
-         $src2_value[31:0]    =  (>>1$rf_wr_index == $rf_rd_index2) && /xreg[>>1$rf_wr_index]>>1$wr   ?  >>1$result   :
-                                                                                                         $rf_rd_data2 ;
+         $src1_value[31:0] =
+              (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en
+                  ?  >>1$result   :
+                     $rf_rd_data1 ;
+         $src2_value[31:0] =
+              (>>1$rf_wr_index == $rf_rd_index2) && >>1$rf_wr_en
+                  ?  >>1$result   :
+                     $rf_rd_data2 ;
       '])
       '])
 
@@ -386,15 +390,15 @@ m4+definitions(['
          $rf_wr_index[4:0]    =  5'b0;
          $rf_wr_data[31:0]    =  32'b0;
       '], m4_rf_style, 2, ['
-         $rf_wr_en            =  $rd_valid && $rd!=5'b0;
+         $rf_wr_en            =  $rd_valid && $rd != 5'b0;
          $rf_wr_index[4:0]    =  $rd;
          $rf_wr_data[31:0]    =  $result;
       '], m4_rf_style, 3, ['
-         $rf_wr_en            =  $rd_valid && $rd!=5'b0 && $valid;
+         $rf_wr_en            =  $rd_valid && $rd != 5'b0 && $valid;
          $rf_wr_index[4:0]    =  $rd;
          $rf_wr_data[31:0]    =  $result;
       '], m4_rf_style, 4, ['
-         $rf_wr_en            =  ($rd_valid && $valid && $rd!=5'b0) || >>2$valid_load;
+         $rf_wr_en            =  ($rd_valid && $valid && $rd != 5'b0) || >>2$valid_load;
          $rf_wr_index[4:0]    =  >>2$valid_load ? >>2$rd : $rd;
          $rf_wr_data[31:0]    =  >>2$valid_load ? >>2$ld_data : $result;
       '])
@@ -463,8 +467,8 @@ m4+definitions(['
       m4_br_stage
          $taken_br   =  ($is_beq  && ($src1_value == $src2_value)) ||
                         ($is_bne  && ($src1_value != $src2_value)) ||
-                        ($is_blt  && (($src1_value < $src2_value)  ^ ($src1_value[31]!=$src2_value[31]))) ||
-                        ($is_bge  && (($src1_value >= $src2_value) ^ ($src1_value[31]!=$src2_value[31]))) ||
+                        ($is_blt  && (($src1_value < $src2_value)  ^ ($src1_value[31] != $src2_value[31]))) ||
+                        ($is_bge  && (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]))) ||
                         ($is_bltu && ($src1_value < $src2_value))  ||
                         ($is_bgeu && ($src1_value >= $src2_value)) ;
          `BOGUS_USE($taken_br)
