@@ -66,7 +66,7 @@ m4+definitions(['
          /mem_array[7:0]
             $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
-                           $wr         ? |calc$mem :
+                           $wr         ? |calc>>2$out :
                                           $RETAIN;
          '])
 
