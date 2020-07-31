@@ -1,6 +1,6 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/vineet/tlv_lib/calculator_shell_lib.tlv'])
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/master/tlv_lib/calculator_shell_lib.tlv?tag=']M4_UNIQUE_TAG)
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
    //// If not m4_pipelined, m4_stage(@#) will evaluate to @1.
@@ -51,9 +51,11 @@ m4+definitions(['
       m4_define(['M4_OUTPUT_STAGE'], 1)'], m4_lab_6, 1, ['
       m4_define(['M4_OUTPUT_STAGE'], 0)'])
       
+      @0
+         $reset = *reset;
       @M4_INPUT_STAGE
          m4_ifelse_block(m4_lab_6, 1, ['
-         $reset = *reset;
+         //$reset = *reset;
          $val1[31:0] = >>m4_eval(M4_OUTPUT_STAGE - M4_INPUT_STAGE + 1)$out;
          $val2[31:0] = $rand2[3:0];
          m4_ifelse_block(m4_lab_10, 1, ['
@@ -64,7 +66,7 @@ m4+definitions(['
 
          m4_ifelse_block(m4_lab_12, 1, ['
          /mem_array[7:0]
-            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op == 3'b101) && |calc$valid;
+            $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op[2:0] == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
                            $wr         ? |calc>>2$out :
                                           $RETAIN;
@@ -73,12 +75,13 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_11, 1, ['
       @M4_OUTPUT_STAGE
          $mem[31:0] = m4_ifelse(m4_lab_12, 1, [''], ['$reset           ? 32'b0 :'])
-                         ($op == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
+                         ($op[2:0] == 3'b101) ? m4_ifelse(m4_lab_12, 1, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
                                             >>2$mem;
          '])
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
          @M4_INPUT_STAGE
+            m4_rand($op, m4_ifelse(m4_lab_11, 1, ['2'], ['1']), 0)
             $sum[31:0] = $val1 + $val2;
             $diff[31:0] = $val1 - $val2;
             $prod[31:0] = $val1 * $val2;
@@ -89,9 +92,10 @@ m4+definitions(['
                          ($op == m4_ifelse(m4_lab_11, 1, ['3'b001'], m4_lab_10, 1, ['2'b01'])) ? $diff :
                          ($op == m4_ifelse(m4_lab_11, 1, ['3'b010'], m4_lab_10, 1, ['2'b10'])) ? $prod :
                          m4_ifelse(m4_lab_11, 1, ['($op == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
-                         ($op == 3'b100) ? $mem : 32'b0;'])
+                         ($op == 3'b100) ? >>2$mem : >>2$out;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
+         m4_rand($op, 1, 0)
          $sum[31:0] = $val1 + $val2;
          $diff[31:0] = $val1 - $val2;
          $prod[31:0] = $val1 * $val2;

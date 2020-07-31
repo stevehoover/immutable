@@ -1,29 +1,43 @@
-Delta     Count        Title
+Delta     Count      Video       Lab         Title
 
-  6         6        Next PC
-  1         7        Fetch (part 1)
-  1         8        Fetch (part 2)
-  2         10       Instruction Types Decode
-  1         11       Instruction Immediate Decode
-  1         12       Instruction Decode
-  1         13       RISC-V Instruction Field Decode
-  1         14       Instruction Decode
-  2         16       Register File Read
-  1         17       Register File Read (part 2)
-  1         18       ALU
-  2         20       Register File Write
-  3         23       Branches 1
-  1         24       Branches 2
-  1         25       Testbench
- 10         35       3-Cycle valid
-  1         36       3-Cycle RISC-V 1
-  2         38       3-Cycle RISC-V 2
-  3         41       Register File Bypass
-  3         44       Branches
-  1         45       Complete Instruction Decode
-  1         46       Complete ALU
-  4         50       Redirect Loads
-  1         51       Load Data 1
-  1         52       Load Data 2
-  1         53       Load/Store in Program
-  2         55       Jumps
+D4SK2
+
+  6         6          6          1            Next PC                                
+  1         7          7          2a           Fetch (part 1)
+  1         8          8          2b           Fetch (part 2)
+  2         10         10         3            Instruction Types Decode
+  1         11         10         4            Instruction Immediate Decode
+  1         12         11         5            Instruction Decode
+  1         13         12         6            RISC-V Instruction Field Decode
+  1         14         13         7            Instruction Decode
+
+
+D4SK3
+
+  2         16         16         1            Register File Read
+  1         17         17         2            Register File Read (part 2)
+  1         18         18         3            ALU
+  2         20         20         4            Register File Write
+  3         23         21         6            Branches 1
+  1         24         22         7            Branches 2
+  1         25         25         8            Testbench
+
+D5  
+
+ 10         35         33                     3-Cycle valid
+  1         36         36                     3-Cycle RISC-V 1
+  1         37         37                     3-Cycle RISC-V 2
+  3         40         39                     Register File Bypass
+  3         43         42                     Branches
+  1         44         44                     Complete Instruction Decode
+  1         45         45                     Complete ALU
+  4         49         48                     Redirect Loads
+  1         50         49                     Load Data 1
+  1         51         51                     Load Data 2
+  1         52         52                     Load/Store in Program
+  2         54         53                     Jumps
+
+
+* L2 has 2 labs with respect to our code - merge em! - SH: Yes, just provide 1 solution including both.
+* Slide 10 repeated - SFH: Okay, just provide 1 solution with both.
+* Repo can be made private - GH gives a token to access raw in the link - Oh, cool! (but, don't worry about it)
