@@ -81,7 +81,7 @@ m4+definitions(['
       m4_ifelse_block(m4_lab_10, 1, ['
       ?$reset_or_valid
          @M4_INPUT_STAGE
-            m4_rand($op, m4_ifelse(m4_lab_11, 1, ['2'], ['1']), 0)
+            //m4_rand($op, m4_ifelse(m4_lab_11, 1, ['2'], ['1']), 0)
             $sum[31:0] = $val1 + $val2;
             $diff[31:0] = $val1 - $val2;
             $prod[31:0] = $val1 * $val2;
@@ -104,10 +104,10 @@ m4+definitions(['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;'])
       @M4_OUTPUT_STAGE
          $out[31:0] = m4_ifelse(m4_lab_9, 1, ['$reset || !$valid'], m4_lab_6, 1, ['$reset']) ? 32'b0 :
-                        ($op == 2'b00) ? $sum  :
-                        ($op == 2'b01) ? $diff :
-                        ($op == 2'b10) ? $prod :
-                                         $quot;
+                        ($op[1:0] == 2'b00) ? $sum  :
+                        ($op[1:0] == 2'b01) ? $diff :
+                        ($op[1:0] == 2'b10) ? $prod :
+                                              $quot;
          m4_ifelse_block(m4_lab_9, 1, [''], m4_lab_8, 1, ['
          $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
