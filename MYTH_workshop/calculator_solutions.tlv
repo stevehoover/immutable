@@ -92,7 +92,7 @@ m4+definitions(['
                          ($op == m4_ifelse(m4_lab_11, 1, ['3'b001'], m4_lab_10, 1, ['2'b01'])) ? $diff :
                          ($op == m4_ifelse(m4_lab_11, 1, ['3'b010'], m4_lab_10, 1, ['2'b10'])) ? $prod :
                          m4_ifelse(m4_lab_11, 1, ['($op == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
-                         ($op == 3'b100) ? >>2$mem : >>2$out;'])
+                         ($op == 3'b100) ? $mem : >>2$out;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
          m4_rand($op, 1, 0)
