@@ -95,7 +95,7 @@ m4+definitions(['
                          ($op == 3'b100) ? >>2$mem : >>2$out;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
-         m4_rand($op, 1, 0)
+         //m4_rand($op, 1, 0)
          $sum[31:0] = $val1 + $val2;
          $diff[31:0] = $val1 - $val2;
          $prod[31:0] = $val1 * $val2;
