@@ -265,7 +265,7 @@ m4+definitions(['
       m4_define(['m4_pc_style'], 6)
 
       m4_tgt_stage
-         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;   
+         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
 
       @3
          $is_jump    =  $is_jal || $is_jalr;
@@ -299,12 +299,12 @@ m4+definitions(['
                         >>3$valid_load       ?  >>3$inc_pc    :
                                                 >>1$inc_pc ;
       '], m4_pc_style, 6, ['
-         $pc[31:0]   =  >>1$reset            ?  '0 :
-                        >>3$valid_taken_br   ?  >>3$br_tgt_pc   :
-                        >>3$valid_load       ?  >>3$inc_pc      :
-                        >>2$is_jal           ?  >>3$br_tgt_pc   :
-                        >>2$is_jalr          ?  >>3$jalr_tgt_pc :
-                                                >>1$inc_pc ;
+         $pc[31:0]   =  >>1$reset                     ?  '0 :
+                        >>3$valid_taken_br            ?  >>3$br_tgt_pc   :
+                        >>3$valid_load                ?  >>3$inc_pc      :
+                        >>3$valid_jump && >>3$is_jal  ?  >>3$br_tgt_pc   :
+                        >>3$valid_jump && >>3$is_jalr ?  >>3$jalr_tgt_pc :
+                                                         >>1$inc_pc ;
       '])
 
       m4_ifelse(m4_tgt_enable, 1, ['
@@ -491,8 +491,8 @@ m4+definitions(['
       '], m4_valid_style, 4, ['
       @3
          $valid = !(>>1$valid_taken_br || >>2$valid_taken_br ||
-                   >>1$valid_load      || >>2$valid_load     ||
-                   $valid_jump);
+                    >>1$valid_load     || >>2$valid_load     ||
+                    >>1$valid_jump     || >>2$valid_jump);
       '])
       
       @1
