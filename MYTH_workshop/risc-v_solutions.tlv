@@ -161,7 +161,7 @@ m4+definitions(['
       @1
          $inc_pc[31:0] = $pc + 32'd4;
       @3
-         $valid_taken_br = $valid && $taken_br;
+         $valid_taken_branch = $valid && $taken_branch;
       '])
 
       m4_lab(1, ['3-Cycle RISC-V 2
@@ -265,7 +265,7 @@ m4+definitions(['
       m4_define(['m4_pc_style'], 6)
 
       m4_tgt_stage
-         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
+         $jalr_target_pc[31:0]   =  $src1_value + $imm;
 
       @3
          $is_jump    =  $is_jal || $is_jalr;
@@ -282,34 +282,34 @@ m4+definitions(['
          $pc[31:0]   =  >>1$reset   ?  32'b0 : 
                                        >>1$pc + 32'd4;
       '], m4_pc_style, 2, ['
-         $pc[31:0]   =  >>1$reset      ?  '0 :
-                        >>1$taken_br   ?  >>1$br_tgt_pc :
-                                          >>1$pc + 32'd4;
+         $pc[31:0]   =  >>1$reset        ? '0 :
+                        >>1$taken_branch ? >>1$br_target_pc :
+                                           >>1$pc + 32'd4;
       '], m4_pc_style, 3, ['
-         $pc[31:0]   =  >>1$reset            ?  '0 :
-                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
-                                                >>3$inc_pc ;
+         $pc[31:0]   =  >>1$reset              ? '0 :
+                        >>3$valid_taken_branch ? >>3$br_target_pc :
+                                                 >>3$inc_pc ;
       '], m4_pc_style, 4, ['
-         $pc[31:0]   =  >>1$reset            ?  '0 :
-                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
-                                                >>1$inc_pc ;
+         $pc[31:0]   =  >>1$reset              ? '0 :
+                        >>3$valid_taken_branch ? >>3$br_target_pc :
+                                                  >>1$inc_pc ;
       '], m4_pc_style, 5, ['
-         $pc[31:0]   =  >>1$reset            ?  '0 :
-                        >>3$valid_taken_br   ?  >>3$br_tgt_pc :
-                        >>3$valid_load       ?  >>3$inc_pc    :
+         $pc[31:0]   =  >>1$reset              ? '0 :
+                        >>3$valid_taken_branch ? >>3$br_target_pc :
+                        >>3$valid_load         ? >>3$inc_pc    :
                                                 >>1$inc_pc ;
       '], m4_pc_style, 6, ['
-         $pc[31:0]   =  >>1$reset                     ?  '0 :
-                        >>3$valid_taken_br            ?  >>3$br_tgt_pc   :
-                        >>3$valid_load                ?  >>3$inc_pc      :
-                        >>3$valid_jump && >>3$is_jal  ?  >>3$br_tgt_pc   :
-                        >>3$valid_jump && >>3$is_jalr ?  >>3$jalr_tgt_pc :
+         $pc[31:0]   =  >>1$reset              ? '0 :
+                        >>3$valid_taken_branch ? >>3$br_target_pc   :
+                        >>3$valid_load         ? >>3$inc_pc      :
+                        >>3$valid_jump && >>3$is_jal  ?  >>3$br_target_pc   :
+                        >>3$valid_jump && >>3$is_jalr ?  >>3$jalr_target_pc :
                                                          >>1$inc_pc ;
       '])
 
       m4_ifelse(m4_tgt_enable, 1, ['
       m4_tgt_stage
-         $br_tgt_pc[31:0] = $pc + $imm;
+         $br_target_pc[31:0] = $pc + $imm;
       '])
       
       m4_ifelse_block(m4_fetch_enable, 1, ['
@@ -465,14 +465,14 @@ m4+definitions(['
 
       m4_ifelse_block(m4_br_enable, 1, ['
       m4_br_stage
-         $taken_br   =  $is_beq  ? ($src1_value == $src2_value) :
-                        $is_bne  ? ($src1_value != $src2_value) :
-                        $is_blt  ? (($src1_value < $src2_value)  ^ ($src1_value[31] != $src2_value[31])) :
-                        $is_bge  ? (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
-                        $is_bltu ? ($src1_value < $src2_value)  :
-                        $is_bgeu ? ($src1_value >= $src2_value) :
-                                   1'b0;
-         `BOGUS_USE($taken_br)
+         $taken_branch = $is_beq  ? ($src1_value == $src2_value) :
+                         $is_bne  ? ($src1_value != $src2_value) :
+                         $is_blt  ? (($src1_value < $src2_value)  ^ ($src1_value[31] != $src2_value[31])) :
+                         $is_bge  ? (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+                         $is_bltu ? ($src1_value < $src2_value)  :
+                         $is_bgeu ? ($src1_value >= $src2_value) :
+                                    1'b0;
+         `BOGUS_USE($taken_branch)
       '])
 
       m4_ifelse_block(m4_valid_style, 1, ['
@@ -483,14 +483,14 @@ m4+definitions(['
                            >>3$valid ;
       '], m4_valid_style, 2, ['
       @3
-         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br);
+         $valid = !(>>1$valid_taken_branch || >>2$valid_taken_branch);
       '], m4_valid_style, 3, ['
       @3
-         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br ||
+         $valid = !(>>1$valid_taken_branch || >>2$valid_taken_branch ||
                     >>1$valid_load     || >>2$valid_load);
       '], m4_valid_style, 4, ['
       @3
-         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br ||
+         $valid = !(>>1$valid_taken_branch || >>2$valid_taken_branch ||
                     >>1$valid_load     || >>2$valid_load     ||
                     >>1$valid_jump     || >>2$valid_jump);
       '])
