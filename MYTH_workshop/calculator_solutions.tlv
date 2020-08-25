@@ -90,7 +90,7 @@ m4+definitions(['
                          (m4_ifelse(m4_lab_11, 1, ['$op == 3'b000'], m4_lab_10, 1, ['$op[1:0] == 2'b00'])) ? $sum  :
                          (m4_ifelse(m4_lab_11, 1, ['$op == 3'b001'], m4_lab_10, 1, ['$op[1:0] == 2'b01'])) ? $diff :
                          (m4_ifelse(m4_lab_11, 1, ['$op == 3'b010'], m4_lab_10, 1, ['$op[1:0] == 2'b10'])) ? $prod :
-                         m4_ifelse(m4_lab_11, 1, ['($op == 3'b010) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
+                         m4_ifelse(m4_lab_11, 1, ['($op == 3'b011) ? $quot :'], m4_lab_10, 1, ['$quot;']) m4_ifelse_block(m4_lab_11, 1, ['
                          ($op == 3'b100) ? >>2$mem : >>2$out;'])
       '], m4_lab_6, 1, ['
       @M4_INPUT_STAGE
