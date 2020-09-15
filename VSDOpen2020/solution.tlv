@@ -23,6 +23,7 @@
                                $is_addi ? "ADDI      " :
                                $is_add  ? "ADD       " :  "UNKNOWN   ";
          $valid = ! $reset;
+         $fetch_instr_str[40*8-1:0] = *instr_strs\[/top<>0$pc[4:2]\];
          \viz_alpha
             //
             initEach() {
@@ -34,7 +35,7 @@
                      fontFamily: "monospace"
                   })
                let decode_header = new fabric.Text("Instr. Decode", {
-                     top: 20,
+                     top: 0,
                      left: 65,
                      fontSize: 18,
                      fontWeight: 800,
@@ -50,7 +51,7 @@
                return {objects: {imem_header, decode_header, rf_header}};
             },
             renderEach: function() {
-               //debugger;
+               debugger
                //
                // PC instr_mem pointer
                //
@@ -62,25 +63,24 @@
                   left: -295,
                   fill: color,
                   fontSize: 14,
-                  fontFamily: "monospace",
-                  zIndex: 100
+                  fontFamily: "monospace"
                })
-               let pc_arrow = new fabric.Line([23, 18 * ($pc.asInt() / 4) + 6, 60, 79], {
-                  stroke: "#a0d0ff",
+               let pc_arrow = new fabric.Line([23, 18 * ($pc.asInt() / 4) + 6, 46, 35], {
+                  stroke: "#d0e8ff",
                   strokeWidth: 2
                })
-               let rs1_arrow = new fabric.Line([310, 18 * '$rf_rd_index1'.asInt() + 6 - 40, 190, 79 + 18 * 2], {
-                  stroke: "#a0d0ff",
+               let rs1_arrow = new fabric.Line([330, 18 * '$rf_rd_index1'.asInt() + 6 - 40, 190, 75 + 18 * 2], {
+                  stroke: "#d0e8ff",
                   strokeWidth: 2,
                   visible: '$rf_rd_en1'.asBool()
                })
-               let rs2_arrow = new fabric.Line([310, 18 * '$rf_rd_index2'.asInt() + 6 - 40, 190, 79 + 18 * 3], {
-                  stroke: "#a0d0ff",
+               let rs2_arrow = new fabric.Line([330, 18 * '$rf_rd_index2'.asInt() + 6 - 40, 190, 75 + 18 * 3], {
+                  stroke: "#d0e8ff",
                   strokeWidth: 2,
                   visible: '$rf_rd_en2'.asBool()
                })
-               let rd_arrow = new fabric.Line([310, 18 * '$rf_wr_index'.asInt() + 6 - 40, 170, 79 + 18 * 0], {
-                  stroke: "#a0a0ff",
+               let rd_arrow = new fabric.Line([330, 18 * '$rf_wr_index'.asInt() + 6 - 40, 168, 75 + 18 * 0], {
+                  stroke: "#d0d0ff",
                   strokeWidth: 3,
                   visible: '$rf_wr_en'.asBool()
                })
@@ -99,7 +99,7 @@
                // Instruction with values.
                //
                let regStr = (valid, regNum, regValue) => {
-                  return valid ? `r${regNum} (${regValue})` : `rX`;
+                  return valid ? `r${regNum}` : `rX`  // valid ? `r${regNum} (${regValue})` : `rX`
                };
                let srcStr = ($src, $valid, $reg, $value) => {
                   return $valid.asBool(false)
@@ -116,7 +116,76 @@
                   fontSize: 14,
                   fontFamily: "monospace"
                });
-               return {objects: [pcPointer, pc_arrow, rs1_arrow, rs2_arrow, rd_arrow, instrWithValues]};
+               // Animate fetch (and provide onChange behavior for other animation).
+               
+               let fetch_instr = new fabric.Text('$fetch_instr_str'.asString(), {
+                  top: 18 * ($pc.asInt() / 4),
+                  left: -272,
+                  fill: "blue",
+                  fontSize: 14,
+                  fontFamily: "monospace"
+               })
+               fetch_instr.animate({top: 32, left: 50}, {
+                    onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                    duration: 500
+               });
+               
+               let src1_value = new fabric.Text('$src1_value'.asInt(0).toString(), {
+                  left: 316 + 8 * 4,
+                  top: 18 * '$rs1'.asInt(0) - 40,
+                  fill: "blue",
+                  fontSize: 14,
+                  fontFamily: "monospace",
+                  fontWeight: 800,
+                  visible: '$rs1_valid'.asBool(false)
+               })
+               setTimeout(() => {src1_value.animate({left: 166, top: 70 + 18 * 2}, {
+                    onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                    duration: 500
+               })}, 500)
+               let src2_value = new fabric.Text('$src2_value'.asInt(0).toString(), {
+                  left: 316 + 8 * 4,
+                  top: 18 * '$rs2'.asInt(0) - 40,
+                  fill: "blue",
+                  fontSize: 14,
+                  fontFamily: "monospace",
+                  fontWeight: 800,
+                  visible: '$rs2_valid'.asBool(false)
+               })
+               setTimeout(() => {src2_value.animate({left: 166, top: 70 + 18 * 3}, {
+                    onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                    duration: 500
+               })}, 500)
+               let result_shadow = new fabric.Text('$result'.asInt(0).toString(), {
+                  left: 146,
+                  top: 70,
+                  fill: "#d0d0ff",
+                  fontSize: 14,
+                  fontFamily: "monospace",
+                  fontWeight: 800,
+                  visible: false
+               })
+               let result = new fabric.Text('$result'.asInt(0).toString(), {
+                  left: 146,
+                  top: 70,
+                  fill: "blue",
+                  fontSize: 14,
+                  fontFamily: "monospace",
+                  fontWeight: 800,
+                  visible: false
+               })
+               if ('$rd_valid'.asBool()) {
+                  setTimeout(() => {
+                     result.setVisible(true)
+                     result_shadow.setVisible(true)
+                     result.animate({left: 317 + 8 * 4, top: 18 * '$rd'.asInt(0) - 40}, {
+                       onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                       duration: 500
+                     })
+                  }, 1000)
+               }
+               
+               return {objects: [pcPointer, pc_arrow, rs1_arrow, rs2_arrow, rd_arrow, instrWithValues, fetch_instr, src1_value, src2_value, result_shadow, result]};
             }
          //
          // Register file
@@ -156,7 +225,7 @@
                initEach: function() {
                   let reg = new fabric.Text("", {
                      top: 18 * this.getIndex() - 40,
-                     left: 315,
+                     left: 316,
                      fontSize: 14,
                      fontFamily: "monospace"
                   });
@@ -166,8 +235,8 @@
                   let rd = '$rd'.asBool(false);
                   let mod = '$wr'.asBool(false);
                   let reg = parseInt(this.getIndex());
-                  let regIdent = reg.toString();
-                  let oldValStr = mod ? `(${'>>1$value'.asInt(NaN).toString()})` : "";
+                  let regIdent = reg.toString().padEnd(2, " ");
+                  let oldValStr = ""  // mod ? `(${'>>1$value'.asInt(NaN).toString()})` : "";
                   this.getInitObject("reg").setText(
                      regIdent + ": " +
                      '$value'.asInt(NaN).toString() + oldValStr);
@@ -299,7 +368,7 @@
    // Reg File
    /xreg[31:0]
       $wr = /top$rf_wr_en && (/top$rf_wr_index != 5'b0) && (/top$rf_wr_index == #xreg);
-      $value[31:0] = /top$reset ?   #xreg           :
+      $value[31:0] = /top$reset ?   0               :
                      $wr        ?   /top$rf_wr_data :
                                     $RETAIN;
    $rf_rd_data1[31:0] = /xreg[$rf_rd_index1]>>1$value;
