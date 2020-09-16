@@ -7,7 +7,6 @@
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
    /* verilator lint_on WIDTH */
-   `define TBD '0
 
 \TLV shell()
    
@@ -138,7 +137,7 @@
                };
                let str = `${regStr('$rd_valid'.asBool(false), '$rd'.asInt(NaN), '$result'.asInt(NaN))}\n` +
                          `  = ${'$mnemonic'.asString()}${srcStr(1, '$rs1_valid', '$rs1', '$src1_value')}${srcStr(2, '$rs2_valid', '$rs2', '$src2_value')}\n` +
-                         `      i[${'$imm'.asInt(NaN)}]`;
+                         ('$is_r_instr'.asBool() ? "" : `      i[${'$imm'.asInt(NaN)}]`);
                let instrWithValues = new fabric.Text(str, {
                   top: 70,
                   left: 65,
@@ -307,72 +306,87 @@
    m4_asm(ADD, r10, r14, r0)            // Store final result to register x10 so that it can be read by main program
    
    
+   //`define TBD '0
+   //`define TBDX
+   `define TBD(x) x
+   `define TBDX(x) x
+   
    $reset = *reset;
+   
    
    // Lab: PC
    $pc[31:0] = >>1$reset        ? 32'0 :
-               >>1$taken_branch ? >>1$br_target_pc :
-                                  >>1$pc + 32'b100;
-   
-   // 
-   $imem_rd_addr[3-1:0] = $pc[4:2];
-   $instr[31:0] = $imem_rd_data[31:0];
+               >>1$taken_branch ? >>1$br_target_pc :    // (initially $taken_branch == 0)
+                                  `TBD(>>1$pc + 32'b100);
    
    
-   // Types
+   // Lab: Fetch
+   $imem_rd_addr[2:0] = `TBD($pc[4:2]);
+   $instr[31:0] = `TBD($imem_rd_data);
+   
+   
+   // Lab: Instruction Types Decode
    $is_i_instr = $instr[6:5] == 2'b00;
-   $is_r_instr = $instr[6:5] == 2'b01 ||
-                 $instr[6:5] == 2'b10;
-   $is_b_instr = $instr[6:5] == 2'b11;
+   $is_r_instr = `TBD($instr[6:5] == 2'b01 || $instr[6:5] == 2'b10);
+   $is_b_instr = `TBD($instr[6:5] == 2'b11);
    
    
-   // Immediate
-   $imm[31:0]  = $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
-                 $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
-                                32'b0 ;
+   // Lab: Instruction Immediate Decode
+   $imm[31:0]  = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :   // I-type
+                 `TBDX($is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :)    // B-type
+                 32'b0;   // Default (unused)
    
    
-   // Other fields
-   $funct3[2:0] = $instr[14:12];
-   $rs1[4:0]    = $instr[19:15];
+   // Lab: Instruction Field Decode
    $rs2[4:0]    = $instr[24:20];
-   $rd[4:0]     = $instr[11:7];
-   $opcode[6:0] = $instr[6:0];
+   $rs1[4:0]    = `TBD($instr[19:15]);
+   $funct3[2:0] = `TBD($instr[14:12]);
+   $rd[4:0]     = `TBD($instr[11:7]);
+   $opcode[6:0] = `TBD($instr[6:0]);
    
    
+   // Lab: Register Validity Decode
+   $rs1_valid = $is_r_instr || $is_i_instr || $is_b_instr;
+   $rs2_valid = $is_r_instr || $is_b_instr ;
+   $rd_valid  = $is_r_instr || $is_i_instr;
+   
+   
+   // Lab: Instruction Decode
    $dec_bits[9:0] = {$funct3, $opcode};
-   $is_blt     = $dec_bits == 10'b100_1100011;
-   $is_addi    = $dec_bits == 10'b000_0010011;
-   $is_add     = $dec_bits == 10'b000_0110011;
+   $is_blt  = $dec_bits == 10'b100_1100011;
+   $is_addi = `TBD($dec_bits == 10'b000_0010011);
+   $is_add  = `TBD($dec_bits == 10'b000_0110011);
    
    
-   $rs1_valid    = $is_r_instr || $is_i_instr || $is_b_instr;
-   $rs2_valid    = $is_r_instr || $is_b_instr ;
-   $rd_valid     = $is_r_instr || $is_i_instr;
+   // Lab: Register File Read
+   $rf_rd_en1         = `TBD($rs1_valid);
+   $rf_rd_en2         = `TBD($rs2_valid);
+   $rf_rd_index1[4:0] = `TBD($rs1);
+   $rf_rd_index2[4:0] = `TBD($rs2);
    
-   $rf_rd_en1         = $rs1_valid;
-   $rf_rd_en2         = $rs2_valid;
-   $rf_rd_index1[4:0] = $rs1;
-   $rf_rd_index2[4:0] = $rs2;
-   
-   $src1_value[31:0] = $rf_rd_data1;
-   $src2_value[31:0] = $rf_rd_data2;
+   $src1_value[31:0] = `TBD($rf_rd_data1);
+   $src2_value[31:0] = `TBD($rf_rd_data2);
    
    
-   $rf_wr_en         = $rd_valid && $rd != 5'b0;
-   $rf_wr_index[4:0] = $rd;
-   $rf_wr_data[31:0] = $result;
-   
-   $result[31:0] = $is_addi ? $src1_value + $imm :
-                   $is_add  ? $src1_value + $src2_value :
-                              32'b0;
+   // Lab: ALU
+   $result[31:0] = $is_addi ? $src1_value + $imm :    // ADDI: src1 + imm
+                   `TBDX($is_add  ? $src1_value + $src2_value :)   // ADD: src1 + src2
+                              32'b0;   // Default (unused)
    
    
-   $taken_branch = $is_blt ? (($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
-                             1'b0;
+   // Lab: Register File Write
+   $rf_wr_en         = `TBD($rd_valid /* && $rd != 5'b0 */);
+   $rf_wr_index[4:0] = `TBD($rd);
+   $rf_wr_data[31:0] = `TBD($result);
    
    
-   $br_target_pc[31:0] = $pc + $imm;
+   // Lab: Branch Condition
+   $taken_branch = `TBD($is_blt ?  ($src1_value < $src2_value) /* ^ ($src1_value[31] != $src2_value[31]) */  : 1'b0);
+   
+   
+   // Lab: Branch Target
+   $br_target_pc[31:0] = `TBD($pc + $imm);
+   // $taken_branch and $br_target_pc control the PC mux.
    
    
    
