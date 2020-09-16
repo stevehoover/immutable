@@ -6,8 +6,38 @@
 
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+   /* verilator lint_on WIDTH */
+   `define TBD '0
 
 \TLV shell()
+   
+   m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
+   
+   // Instruction Memory containing program defined by m4_asm(...) instantiations.
+   \SV_plus
+      // The program in an instruction memory.
+      logic [31:0] instrs [0:8-1];
+      assign instrs = '{
+         m4_instr0['']m4_forloop(['m4_instr_ind'], 1, M4_NUM_INSTRS, [', m4_echo(['m4_instr']m4_instr_ind)'])
+      };
+   /M4_IMEM_HIER
+      $instr[31:0] = *instrs\[#imem\];
+   $imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
+   
+   // Reg File
+   /xreg[31:0]
+      $wr = /top$rf_wr_en && (/top$rf_wr_index != 5'b0) && (/top$rf_wr_index == #xreg);
+      $value[31:0] = /top$reset ? 32'b0           :
+                     $wr        ? /top$rf_wr_data :
+                                  $RETAIN;
+   $rf_rd_data1[31:0] = /xreg[$rf_rd_index1]>>1$value;
+   $rf_rd_data2[31:0] = /xreg[$rf_rd_index2]>>1$value;
+   
+   // Assert these to end simulation (before Makerchip cycle limit).
+   *passed = /xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
+   *failed = *cyc_cnt > 50;
+   
+   
    |view
       @0
          // String representations of the instructions for debug.
@@ -23,7 +53,7 @@
                                $is_addi ? "ADDI      " :
                                $is_add  ? "ADD       " :  "UNKNOWN   ";
          $valid = ! $reset;
-         $fetch_instr_str[40*8-1:0] = *instr_strs\[/top<>0$pc[4:2]\];
+         $fetch_instr_str[40*8-1:0] = *instr_strs\[/top<>0$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
          \viz_alpha
             //
             initEach() {
@@ -51,7 +81,7 @@
                return {objects: {imem_header, decode_header, rf_header}};
             },
             renderEach: function() {
-               debugger
+               //debugger
                //
                // PC instr_mem pointer
                //
@@ -211,7 +241,7 @@
                      global.instr_mem_drawn[this.getIndex()] = true
                      let instr_str = '$instr'.asBinaryStr(NaN).padEnd(39) + '$instr_str'.asString()
                      instr_str = instr_str.slice(0, -5)
-                     debugger
+                     //debugger
                      this.getInitObject("str").setText(instr_str)
                      this.getCanvas().add(this.getInitObject("str"))
                   }
@@ -223,25 +253,31 @@
                   (/top<>0$rf_rd_en2 && /top<>0$rf_rd_index2 == #xreg);
             \viz_alpha
                initEach: function() {
-                  let reg = new fabric.Text("", {
-                     top: 18 * this.getIndex() - 40,
-                     left: 316,
-                     fontSize: 14,
-                     fontFamily: "monospace"
-                  });
-                  return {objects: {reg: reg}};
+                  return {}  // {objects: {reg: reg}};
                },
                renderEach: function() {
                   let rd = '$rd'.asBool(false);
                   let mod = '$wr'.asBool(false);
                   let reg = parseInt(this.getIndex());
                   let regIdent = reg.toString().padEnd(2, " ");
-                  let oldValStr = ""  // mod ? `(${'>>1$value'.asInt(NaN).toString()})` : "";
-                  this.getInitObject("reg").setText(
-                     regIdent + ": " +
-                     '$value'.asInt(NaN).toString() + oldValStr);
-                  this.getInitObject("reg").set({fill: mod ? "blue" : "black", fontWeight: mod ? 800 : 400})
-                  this.getInitObject("reg").set({textBackgroundColor: rd ? "#b0ffff" : "white"})
+                  let newValStr = regIdent + ": " + (mod ? '$value'.asInt(NaN).toString() : "");
+                  let reg_str = new fabric.Text(regIdent + ": " + '>>1$value'.asInt(NaN).toString(), {
+                     top: 18 * this.getIndex() - 40,
+                     left: 316,
+                     fontSize: 14,
+                     fill: mod ? "blue" : "black",
+                     fontWeight: mod ? 800 : 400,
+                     fontFamily: "monospace",
+                     textBackgroundColor: rd ? "#b0ffff" : null
+                  })
+                  if (mod) {
+                     setTimeout(() => {
+                        console.log(`Reg ${this.getIndex()} written with: ${newValStr}.`)
+                        reg_str.set({text: newValStr, dirty: true})
+                        this.global.canvas.renderAll()
+                     }, 1500)
+                  }
+                  return {objects: [reg_str]}
                }
 \TLV
 
@@ -270,114 +306,80 @@
    m4_asm(BLT, r13, r12, 1111111111000) // If x13 is less than x12, branch to <loop>
    m4_asm(ADD, r10, r14, r0)            // Store final result to register x10 so that it can be read by main program
    
-   m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
-   /* m4_asm_mem_expr */
+   
    $reset = *reset;
-
-
-   $pc[31:0]   =  >>1$reset        ? '0 :
-                  >>1$taken_branch ? >>1$br_target_pc :
-                                     >>1$pc + 32'd4;
-
-   //$imem_rd_en                          = !$reset;
+   
+   // Lab: PC
+   $pc[31:0] = >>1$reset        ? 32'0 :
+               >>1$taken_branch ? >>1$br_target_pc :
+                                  >>1$pc + 32'b100;
+   
+   // 
    $imem_rd_addr[3-1:0] = $pc[4:2];
-   $instr[31:0]                         = $imem_rd_data[31:0];
-
-
+   $instr[31:0] = $imem_rd_data[31:0];
+   
+   
    // Types
-   $is_i_instr = $instr[6:2] ==? 5'b0000x ||
-                 $instr[6:2] ==? 5'b001x0 ||
-                 $instr[6:2] ==? 5'b11001 ;
-
-   $is_r_instr = $instr[6:2] ==? 5'b01011 ||
-                 $instr[6:2] ==? 5'b011x0 ||
-                 $instr[6:2] ==? 5'b10100 ;
-
-   $is_b_instr = $instr[6:2] ==? 5'b11000;
-
-
+   $is_i_instr = $instr[6:5] == 2'b00;
+   $is_r_instr = $instr[6:5] == 2'b01 ||
+                 $instr[6:5] == 2'b10;
+   $is_b_instr = $instr[6:5] == 2'b11;
+   
+   
    // Immediate
-   $imm[31:0]  =  $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
-                  $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
-                                 32'b0 ;
-
-
+   $imm[31:0]  = $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} :
+                 $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
+                                32'b0 ;
+   
+   
    // Other fields
-   $funct7[6:0] = $instr[31:25];
    $funct3[2:0] = $instr[14:12];
    $rs1[4:0]    = $instr[19:15];
    $rs2[4:0]    = $instr[24:20];
    $rd[4:0]     = $instr[11:7];
    $opcode[6:0] = $instr[6:0];
-
-
-   $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
-   $is_blt     =  $dec_bits ==? 11'bx_100_1100011;
-
-   $is_addi    =  $dec_bits ==? 11'bx_000_0010011;
-   $is_add     =  $dec_bits ==? 11'b0_000_0110011 ;
-
-
-
+   
+   
+   $dec_bits[9:0] = {$funct3, $opcode};
+   $is_blt     = $dec_bits == 10'b100_1100011;
+   $is_addi    = $dec_bits == 10'b000_0010011;
+   $is_add     = $dec_bits == 10'b000_0110011;
+   
+   
    $rs1_valid    = $is_r_instr || $is_i_instr || $is_b_instr;
    $rs2_valid    = $is_r_instr || $is_b_instr ;
    $rd_valid     = $is_r_instr || $is_i_instr;
-
-
-   $rf_rd_en1           =  $rs1_valid;
-   $rf_rd_en2           =  $rs2_valid;
-   $rf_rd_index1[4:0]   =  $rs1;
-   $rf_rd_index2[4:0]   =  $rs2;
-
-   $src1_value[31:0]    =  $rf_rd_data1;
-   $src2_value[31:0]    =  $rf_rd_data2;
-
-
-   $rf_wr_en            =  $rd_valid && $rd != 5'b0;
-   $rf_wr_index[4:0]    =  $rd;
-   $rf_wr_data[31:0]    =  $result;
-
-   $result[31:0] =   $is_addi ?  $src1_value + $imm :
-                     $is_add  ?  $src1_value + $src2_value :
-                                 32'bx;
-
-
-   $taken_branch = $is_blt  ? (($src1_value < $src2_value)  ^ ($src1_value[31] != $src2_value[31])) :
-                              1'b0;
-
-
+   
+   $rf_rd_en1         = $rs1_valid;
+   $rf_rd_en2         = $rs2_valid;
+   $rf_rd_index1[4:0] = $rs1;
+   $rf_rd_index2[4:0] = $rs2;
+   
+   $src1_value[31:0] = $rf_rd_data1;
+   $src2_value[31:0] = $rf_rd_data2;
+   
+   
+   $rf_wr_en         = $rd_valid && $rd != 5'b0;
+   $rf_wr_index[4:0] = $rd;
+   $rf_wr_data[31:0] = $result;
+   
+   $result[31:0] = $is_addi ? $src1_value + $imm :
+                   $is_add  ? $src1_value + $src2_value :
+                              32'b0;
+   
+   
+   $taken_branch = $is_blt ? (($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+                             1'b0;
+   
+   
    $br_target_pc[31:0] = $pc + $imm;
-
-      
    
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = /xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
-   *failed = *cyc_cnt > 50;
    
-   // Instruction Memory containing program defined by m4_asm(...) instantiations.
-   \SV_plus
-      // The program in an instruction memory.
-      logic [31:0] instrs [0:8-1];
-      assign instrs = '{
-         m4_instr0['']m4_forloop(['m4_instr_ind'], 1, M4_NUM_INSTRS, [', m4_echo(['m4_instr']m4_instr_ind)'])
-      };
-   /M4_IMEM_HIER
-      $instr[31:0] = *instrs\[#imem\];
-   $imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
-   
-   // Reg File
-   /xreg[31:0]
-      $wr = /top$rf_wr_en && (/top$rf_wr_index != 5'b0) && (/top$rf_wr_index == #xreg);
-      $value[31:0] = /top$reset ?   0               :
-                     $wr        ?   /top$rf_wr_data :
-                                    $RETAIN;
-   $rf_rd_data1[31:0] = /xreg[$rf_rd_index1]>>1$value;
-   $rf_rd_data2[31:0] = /xreg[$rf_rd_index2]>>1$value;
    
    m4+shell()
-
+   
    // ============================================================================================================
-
+   
    // The stage that is represented by visualization.
    
 
