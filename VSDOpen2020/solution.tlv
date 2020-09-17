@@ -1,16 +1,12 @@
 \m4_TLV_version 1d: tl-x.org
-\SV
-   // This code can be found in: https://github.com/stevehoover/VSDOpen2020_TLV_RISC-V_Tutorial
-   
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/c1719d5b338896577b79ee76c2f443ca2a76e14f/tlv_lib/risc-v_shell_lib.tlv'])
-
-\SV
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
-   /* verilator lint_on WIDTH */
-
 \TLV shell()
+   // =======================================================================================================
+   // THIS CODE IS PROVIDED. NO NEED TO LOOK BEHIND THE CURTAIN. LEARN MORE USING THE MAKERCHIP TUTORIALS.
    
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
+   
+   
+   $reset = *reset;
    
    // Instruction Memory containing program defined by m4_asm(...) instantiations.
    \SV_plus
@@ -22,6 +18,7 @@
    /M4_IMEM_HIER
       $instr[31:0] = *instrs\[#imem\];
    $imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
+   `BOGUS_USE($imem_rd_data)
    
    // Reg File
    /xreg[31:0]
@@ -31,6 +28,7 @@
                                   $RETAIN;
    $rf_rd_data1[31:0] = /xreg[$rf_rd_index1]>>1$value;
    $rf_rd_data2[31:0] = /xreg[$rf_rd_index2]>>1$value;
+   `BOGUS_USE($rf_rd_data1 $rf_rd_data2)
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = /xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
@@ -52,7 +50,7 @@
                                $is_addi ? "ADDI      " :
                                $is_add  ? "ADD       " :  "UNKNOWN   ";
          $valid = ! $reset;
-         $fetch_instr_str[40*8-1:0] = *instr_strs\[/top<>0$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
+         $fetch_instr_str[40*8-1:0] = *instr_strs\[$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
          \viz_alpha
             //
             initEach() {
@@ -220,7 +218,7 @@
          // Register file
          //
          /imem[m4_eval(M4_NUM_INSTRS-1):0]  // TODO: Cleanly report non-integer ranges.
-            $rd = ! /top<>0$reset && /top<>0$pc[4:2] == #imem;
+            $rd = ! |view$reset && |view$pc[4:2] == #imem;
             \viz_alpha
                initEach() {
                  let str = new fabric.Text("", {
@@ -248,8 +246,8 @@
                }
          /xreg[31:0]
             $ANY = /top/xreg<>0$ANY;
-            $rd = (/top<>0$rf_rd_en1 && /top<>0$rf_rd_index1 == #xreg) ||
-                  (/top<>0$rf_rd_en2 && /top<>0$rf_rd_index2 == #xreg);
+            $rd = (|view$rf_rd_en1 && |view$rf_rd_index1 == #xreg) ||
+                  (|view$rf_rd_en2 && |view$rf_rd_index2 == #xreg);
             \viz_alpha
                initEach: function() {
                   return {}  // {objects: {reg: reg}};
@@ -278,6 +276,17 @@
                   }
                   return {objects: [reg_str]}
                }
+// ======================== END OF LIBRARY FILE ========================================================================
+// MAIN FILE STARTS HERE -> \m4_TLV_version 1d: tl-x.org
+\SV
+   // This code can be found in: https://github.com/stevehoover/VSDOpen2020_TLV_RISC-V_Tutorial
+   
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/RISC-V_MYTH_Workshop/c1719d5b338896577b79ee76c2f443ca2a76e14f/tlv_lib/risc-v_shell_lib.tlv'])
+
+\SV
+   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+   /* verilator lint_on WIDTH */
+
 \TLV
 
    // /====================\
@@ -306,86 +315,84 @@
    m4_asm(ADD, r10, r14, r0)            // Store final result to register x10 so that it can be read by main program
    
    
-   //`define TBD '0
-   //`define TBDX
-   `define TBD(x) x
-   `define TBDX(x) x
-   
-   $reset = *reset;
+   //m4_define(['TBD'], [''0'])
+   //m4_define(['TBDX'], [''])
+   m4_define(['TBD'], ['$*'])
+   m4_define(['TBDX'], ['$*'])
    
    
    // Lab: PC
    $pc[31:0] = >>1$reset        ? 32'0 :
                >>1$taken_branch ? >>1$br_target_pc :    // (initially $taken_branch == 0)
-                                  `TBD(>>1$pc + 32'b100);
+                                  TBD(>>1$pc + 32'b100);
    
    
    // Lab: Fetch
-   $imem_rd_addr[2:0] = `TBD($pc[4:2]);
-   $instr[31:0] = `TBD($imem_rd_data);
+   $imem_rd_addr[2:0] = TBD($pc[4:2]);
+   $instr[31:0] = TBD($imem_rd_data);
    
    
    // Lab: Instruction Types Decode
    $is_i_instr = $instr[6:5] == 2'b00;
-   $is_r_instr = `TBD($instr[6:5] == 2'b01 || $instr[6:5] == 2'b10);
-   $is_b_instr = `TBD($instr[6:5] == 2'b11);
+   $is_r_instr = TBD($instr[6:5] == 2'b01 || $instr[6:5] == 2'b10);
+   $is_b_instr = TBD($instr[6:5] == 2'b11);
    
    
    // Lab: Instruction Immediate Decode
    $imm[31:0]  = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :   // I-type
-                 `TBDX($is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :)    // B-type
+                 TBDX($is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :)    // B-type
                  32'b0;   // Default (unused)
    
    
    // Lab: Instruction Field Decode
    $rs2[4:0]    = $instr[24:20];
-   $rs1[4:0]    = `TBD($instr[19:15]);
-   $funct3[2:0] = `TBD($instr[14:12]);
-   $rd[4:0]     = `TBD($instr[11:7]);
-   $opcode[6:0] = `TBD($instr[6:0]);
+   $rs1[4:0]    = TBD($instr[19:15]);
+   $funct3[2:0] = TBD($instr[14:12]);
+   $rd[4:0]     = TBD($instr[11:7]);
+   $opcode[6:0] = TBD($instr[6:0]);
    
    
    // Lab: Register Validity Decode
    $rs1_valid = $is_r_instr || $is_i_instr || $is_b_instr;
-   $rs2_valid = $is_r_instr || $is_b_instr ;
-   $rd_valid  = $is_r_instr || $is_i_instr;
+   $rs2_valid = TBD($is_r_instr || $is_b_instr);
+   $rd_valid  = TBD($is_r_instr || $is_i_instr);
    
    
    // Lab: Instruction Decode
    $dec_bits[9:0] = {$funct3, $opcode};
    $is_blt  = $dec_bits == 10'b100_1100011;
-   $is_addi = `TBD($dec_bits == 10'b000_0010011);
-   $is_add  = `TBD($dec_bits == 10'b000_0110011);
+   $is_addi = TBD($dec_bits == 10'b000_0010011);
+   $is_add  = TBD($dec_bits == 10'b000_0110011);
    
    
    // Lab: Register File Read
-   $rf_rd_en1         = `TBD($rs1_valid);
-   $rf_rd_en2         = `TBD($rs2_valid);
-   $rf_rd_index1[4:0] = `TBD($rs1);
-   $rf_rd_index2[4:0] = `TBD($rs2);
+   $rf_rd_en1         = TBD($rs1_valid);
+   $rf_rd_en2         = TBD($rs2_valid);
+   $rf_rd_index1[4:0] = TBD($rs1);
+   $rf_rd_index2[4:0] = TBD($rs2);
    
-   $src1_value[31:0] = `TBD($rf_rd_data1);
-   $src2_value[31:0] = `TBD($rf_rd_data2);
+   $src1_value[31:0] = TBD($rf_rd_data1);
+   $src2_value[31:0] = TBD($rf_rd_data2);
    
    
    // Lab: ALU
    $result[31:0] = $is_addi ? $src1_value + $imm :    // ADDI: src1 + imm
-                   `TBDX($is_add  ? $src1_value + $src2_value :)   // ADD: src1 + src2
+                   TBDX($is_add  ? $src1_value + $src2_value :)   // ADD: src1 + src2
                               32'b0;   // Default (unused)
    
    
    // Lab: Register File Write
-   $rf_wr_en         = `TBD($rd_valid /* && $rd != 5'b0 */);
-   $rf_wr_index[4:0] = `TBD($rd);
-   $rf_wr_data[31:0] = `TBD($result);
+   $rf_wr_en         = TBD($rd_valid /* && $rd != 5'b0 */);
+   $rf_wr_index[4:0] = TBD($rd);
+   $rf_wr_data[31:0] = TBD($result);
    
    
    // Lab: Branch Condition
-   $taken_branch = `TBD($is_blt ?  ($src1_value < $src2_value) /* ^ ($src1_value[31] != $src2_value[31]) */  : 1'b0);
+   $taken_branch = TBD($is_blt ?  ($src1_value < $src2_value) /* ^ ($src1_value[31] != $src2_value[31]) */  : 1'b0);
    
    
    // Lab: Branch Target
-   $br_target_pc[31:0] = `TBD($pc + $imm);
+   $br_target_pc[31:0] = TBD($pc + $imm);
    // $taken_branch and $br_target_pc control the PC mux.
    
    
