@@ -55,16 +55,16 @@ m4+definitions(['
 
 
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
-      m4_lab(6, ['Next PC
+      m4_lab(1, ['Next PC
       m4_define(['m4_pc_style'], 1)
       '])
-      m4_lab(1, ['Fetch (part 1)
+      m4_lab(1, ['Fetch
       m4_define(['m4_imem_enable'], 1)
       '])
-      m4_lab(1, ['Fetch (part 2)
-      m4_define(['m4_fetch_enable'], 1)
-      // just so that M4_NUM_INSTRS can get overwritten later, expression is same
-      '])
+      // m4_lab(1, ['Fetch (part 2)
+      // m4_define(['m4_fetch_enable'], 1)
+      // // just so that M4_NUM_INSTRS can get overwritten later, expression is same
+      // '])
 
       m4_lab(2, ['Instruction Types Decode and Immediate Decode
       @1
@@ -281,8 +281,8 @@ m4+definitions(['
       @0
       m4_ifelse_block(m4_pc_style, 1, ['
          $pc[31:0]      =  >>1$reset   ?  32'b0 : 
-                                       >>1$next_pc;
-         $next_pc[31:0] =  $pc + 32'd4;
+                                       >>1$inc_pc;
+         $inc_pc[31:0]  =  $pc + 32'd4;         // $inc_pc in the diagrams so going with that
       '], m4_pc_style, 2, ['
          $pc[31:0]   =  >>1$reset      ?  '0 :
                         >>1$taken_br   ?  >>1$br_tgt_pc :
@@ -314,13 +314,13 @@ m4+definitions(['
          $br_tgt_pc[31:0] = $pc + $imm;
       '])
       
-      m4_ifelse_block(m4_fetch_enable, 1, ['
-      @1
-         $imem_rd_en                          = !$reset;
-         $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
-         $instr[31:0]                         = $imem_rd_data[31:0];
-         `BOGUS_USE($instr)
-      '])
+      // m4_ifelse_block(m4_fetch_enable, 1, ['
+      // @1
+      //    $imem_rd_en                          = !$reset;
+      //    $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
+      //    $instr[31:0]                         = $imem_rd_data[31:0];
+      //    `BOGUS_USE($instr)
+      // '])
 
       m4_ifelse_block(m4_fields_style, 1, ['
       @1
@@ -511,7 +511,9 @@ m4+definitions(['
 
    |cpu
       m4_ifelse_block(m4_imem_enable, 1, ['
-      m4+imem(@1)    // Args: (read stage)
+      //m4+imem(@1)    // Args: (read stage)
+      @1
+         `READONLY_MEM($pc, $instr[31:0])
       '])
       
       // Args: (read stage, write stage) - if equal, no register bypass is required
