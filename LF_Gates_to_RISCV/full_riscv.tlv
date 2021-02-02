@@ -194,6 +194,7 @@ m4+definitions(['
             
             let color = !(valid.asBool()) ? "gray" :
                                             "blue";
+            
             let pcPointer = new fabric.Text("👉", {
                top: 18 * (pc.asInt() >> 2),
                left: -295,
@@ -445,12 +446,15 @@ m4+definitions(['
                let rf_rd_index1 = siggen(`RfViz_viz_rf_rd_index1_a0`);
                let rf_rd_en2 = siggen(`RfViz_viz_rf_rd_en1_a0`);
                let rf_rd_index2 = siggen(`RfViz_viz_rf_rd_index2_a0`);
+               let rf_wr_index = siggen(`RfViz_viz_rf_wr_index_a0`);
                let wr = siggen(`L1_Xreg[${this.getIndex()}].L1_wr_a0`);
-               let value = siggen(`Xreg_value_a1(${this.getIndex()})`);
+               let value = siggen(`Xreg_value_a0(${this.getIndex()})`);
                
-               let rd = (rf_rd_en1.asBool(false) && rf_rd_index1 == this.getIndex()) || 
-                        (rf_rd_en2.asBool(false) && rf_rd_index2 == this.getIndex());
+               let rd = (rf_rd_en1.asBool(false) && rf_rd_index1.asInt() == this.getIndex()) || 
+                        (rf_rd_en2.asBool(false) && rf_rd_index2.asInt() == this.getIndex());
+               
                let mod = wr.asBool(false);
+               let wr_color = mod && rf_wr_index.asInt() == this.getIndex();
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
                let newValStr = regIdent + ": ";
@@ -459,9 +463,9 @@ m4+definitions(['
                   left: 316,
                   fontSize: 14,
                   fill: mod ? "blue" : "black",
-                  fontWeight: mod ? 1000 : 400,
+                  fontWeight: mod ? 800 : 400,
                   fontFamily: "monospace",
-                  textBackgroundColor: rd ? "#b0ffff" : null
+                  textBackgroundColor: rd ? "#b0ffff" : wr_color ? "#ffef87" : null
                })
                if (mod) {
                   setTimeout(() => {
@@ -483,11 +487,14 @@ m4+definitions(['
                
                let dmem_rd_en = siggen(`DmemViz_viz_dmem_rd_en_a0`);
                let dmem_rd_index = siggen(`DmemViz_viz_dmem_rd_index_a0`);
+               let dmem_wr_index = siggen(`DmemViz_viz_dmem_wr_index_a0`);
+               
                let wr = siggen(`L1_Dmem[${this.getIndex()}].L1_wr_a0`);
-               let value = siggen(`Dmem_value_a1(${this.getIndex()})`);
+               let value = siggen(`Dmem_value_a0(${this.getIndex()})`);
                
                let rd = dmem_rd_en.asBool() && dmem_rd_index.asInt() == this.getIndex();
                let mod = wr.asBool(false);
+               let wr_color = mod && dmem_wr_index.asInt() == this.getIndex();
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
                let newValStr = regIdent + ": ";
@@ -496,9 +503,9 @@ m4+definitions(['
                   left: 480,
                   fontSize: 14,
                   fill: mod ? "blue" : "black",
-                  fontWeight: mod ? 1000 : 400,
+                  fontWeight: mod ? 800 : 400,
                   fontFamily: "monospace",
-                  textBackgroundColor: rd ? "#b0ffff" : null
+                  textBackgroundColor: rd ? "#b0ffff" : wr_color ? "#ffef87" : null
                })
                if (mod) {
                   setTimeout(() => {
@@ -562,8 +569,8 @@ m4+definitions(['
                      $pc + 32'd4 ;
    $pc[31:0] = >>1$next_pc;
    
-      //2 - IMEM - Read
-      //@1
+   //2 - IMEM - Read
+   //@1
    `READONLY_MEM($pc, $$instr[31:0])
 
    //3 - Decode Logic - RISBUJ
