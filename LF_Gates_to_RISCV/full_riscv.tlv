@@ -40,9 +40,9 @@ m4+definitions(['
    /xreg[_entries-1:0]
       $ANY = /top/rf_viz<>0$ANY;
       $wr                  =  $viz_rf_wr_en && ($viz_rf_wr_index == #xreg);
-      $value[_width-1:0]   =  $viz_rf_reset    ?  #xreg                  :
-                              >>1$wr               ?  >>1$viz_rf_wr_data :
-                                                      $RETAIN;
+      $value[_width-1:0]   =  $viz_rf_reset    ?  #xreg              :
+                              >>1$wr           ?  >>1$viz_rf_wr_data :
+                                                  $RETAIN;
    
    $$_port2_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en1 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index1]$value : 'X;
    $$_port3_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en2 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index2]$value : 'X;
@@ -65,9 +65,9 @@ m4+definitions(['
    /dmem[_entries-1:0]
       $ANY = /top/dmem_viz<>0$ANY;
       $wr                  =  $viz_dmem_wr_en && ($viz_dmem_wr_index == #dmem);
-      $value[_width-1:0]   =  $viz_dmem_reset    ?     #dmem                    :   
-                              >>1$wr                 ?     >>1$viz_dmem_wr_data :   
-                                                           $RETAIN;
+      $value[_width-1:0]   =  $viz_dmem_reset    ?     #dmem                :
+                              >>1$wr             ?     >>1$viz_dmem_wr_data :
+                                                       $RETAIN;
    
    $$_port2_data[_width-1:0] = /top/dmem_viz<>0$viz_dmem_rd_en ? /dmem[/top/dmem_viz<>0$viz_dmem_rd_index]$value : 'X;
    '])
@@ -82,7 +82,7 @@ m4+definitions(['
    /cpuviz
       $fetch_instr_str[40*8-1:0] = *instr_strs\[/top$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
       \viz_alpha
-         initEach() {            
+         initEach() {
             let imem_header = new fabric.Text("📒 Instr. Memory", {
                   top: -29,
                   left: -440,
