@@ -168,33 +168,33 @@ m4+definitions(['
                return sig
             }
             
-            var example       =   siggen("error_eg")
-            var pc            =   siggen("pc");
-            var rd_valid      =   siggen("rd_valid");
-            var rd            =   siggen("rd");
-            var result        =   siggen("result");
-            var src1_value    =   siggen("src1_value");
-            var src2_value    =   siggen("src2_value");
-            var imm           =   siggen("imm");
-            var imm_valid     =   siggen("imm_valid");
-            var rs1           =   siggen("rs1");
-            var rs2           =   siggen("rs2");
-            var rs1_valid     =   siggen("rs1_valid");
-            var rs2_valid     =   siggen("rs2_valid");
-            var valid         =   siggen("valid");
-            var mnemonic      =   siggen("mnemonic");
+            let example       =   siggen("error_eg")
+            let pc            =   siggen("pc");
+            let rd_valid      =   siggen("rd_valid");
+            let rd            =   siggen("rd");
+            let result        =   siggen("result");
+            let src1_value    =   siggen("src1_value");
+            let src2_value    =   siggen("src2_value");
+            let imm           =   siggen("imm");
+            let imm_valid     =   siggen("imm_valid");
+            let rs1           =   siggen("rs1");
+            let rs2           =   siggen("rs2");
+            let rs1_valid     =   siggen("rs1_valid");
+            let rs2_valid     =   siggen("rs2_valid");
+            let valid         =   siggen("valid");
+            let mnemonic      =   siggen("mnemonic");
             
-            var rf_rd_en1     =   siggen_rf_dmem("viz_rf_rd_en1", "RfViz")   
-            var rf_rd_index1  =   siggen_rf_dmem("viz_rf_rd_index1", "RfViz")      
-            var rf_rd_en2     =   siggen_rf_dmem("viz_rf_rd_en2", "RfViz")   
-            var rf_rd_index2  =   siggen_rf_dmem("viz_rf_rd_index2", "RfViz")      
-            var rf_wr_en      =   siggen_rf_dmem("viz_rf_wr_en", "RfViz")  
-            var rf_wr_index   =   siggen_rf_dmem("viz_rf_wr_index", "RfViz")     
-            var rf_wr_data    =   siggen_rf_dmem("viz_rf_wr_data", "RfViz")
-            var dmem_rd_en    =   siggen_rf_dmem("viz_dmem_rd_en", "DmemViz")    
-            var dmem_rd_index =   siggen_rf_dmem("viz_dmem_rd_index", "DmemViz")       
-            var dmem_wr_en    =   siggen_rf_dmem("viz_dmem_wr_en", "DmemViz")    
-            var dmem_wr_index =   siggen_rf_dmem("viz_dmem_wr_index", "DmemViz")       
+            let rf_rd_en1     =   siggen_rf_dmem("viz_rf_rd_en1", "RfViz")   
+            let rf_rd_index1  =   siggen_rf_dmem("viz_rf_rd_index1", "RfViz")      
+            let rf_rd_en2     =   siggen_rf_dmem("viz_rf_rd_en2", "RfViz")   
+            let rf_rd_index2  =   siggen_rf_dmem("viz_rf_rd_index2", "RfViz")      
+            let rf_wr_en      =   siggen_rf_dmem("viz_rf_wr_en", "RfViz")  
+            let rf_wr_index   =   siggen_rf_dmem("viz_rf_wr_index", "RfViz")     
+            let rf_wr_data    =   siggen_rf_dmem("viz_rf_wr_data", "RfViz")
+            let dmem_rd_en    =   siggen_rf_dmem("viz_dmem_rd_en", "DmemViz")    
+            let dmem_rd_index =   siggen_rf_dmem("viz_dmem_rd_index", "DmemViz")       
+            let dmem_wr_en    =   siggen_rf_dmem("viz_dmem_wr_en", "DmemViz")    
+            let dmem_wr_index =   siggen_rf_dmem("viz_dmem_wr_index", "DmemViz")       
             
             let color = !(valid.asBool()) ? "gray" :
                                             "blue";
@@ -436,26 +436,28 @@ m4+definitions(['
                this.getInitObject("disassembled").set({textBackgroundColor: '$rd_viz'.asBool() ? "#b0ffff" : "white"})
             }
       
-      //\viz_alpha
-      //   for(i = 0; i<32; i++){
-      //      let rd = 
-      
       /xreg[31:0]
-         $ANY = /top/xreg<>0$ANY;
-         $rd = (/top/rf_viz<>0$viz_rf_rd_en1 && (/top/rf_viz<>0$viz_rf_rd_index1 == #xreg)) ||
-               (/top/rf_viz<>0$viz_rf_rd_en2 && (/top/rf_viz<>0$viz_rf_rd_index2 == #xreg));
-         //$wr = (/top/cpuviz$rf_wr_en && (/top/cpuviz$rf_wr_index == #xreg));
+         $sticky_zero = '0;
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               let rd = '$rd'.asBool(false);
-               let mod = '$wr'.asBool(false);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? '$sticky_zero' : this.svSigRef(`${name}`);
+               let rf_rd_en1 = siggen(`RfViz_viz_rf_rd_en1_a0`);
+               let rf_rd_index1 = siggen(`RfViz_viz_rf_rd_index1_a0`);
+               let rf_rd_en2 = siggen(`RfViz_viz_rf_rd_en1_a0`);
+               let rf_rd_index2 = siggen(`RfViz_viz_rf_rd_index2_a0`);
+               let wr = siggen(`L1_Xreg[${this.getIndex()}].L1_wr_a0`);
+               let value = siggen(`Xreg_value_a1(${this.getIndex()})`);
+               
+               let rd = (rf_rd_en1.asBool(false) && rf_rd_index1 == this.getIndex()) || 
+                        (rf_rd_en2.asBool(false) && rf_rd_index2 == this.getIndex());
+               let mod = wr.asBool(false);
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
                let newValStr = regIdent + ": ";
-               let reg_str = new fabric.Text(regIdent + ": " + '>>1$value'.asInt(NaN).toString(), {
+               let reg_str = new fabric.Text(regIdent + ": " + value.asInt(NaN).toString(), {
                   top: 18 * this.getIndex() - 40,
                   left: 316,
                   fontSize: 14,
@@ -475,19 +477,25 @@ m4+definitions(['
             }
          
       /dmem[31:0]
-         $ANY = /top/dmem<>0$ANY;
-         $rd = (/top/dmem_viz<>0$viz_dmem_rd_en && /top/dmem_viz<>0$viz_dmem_rd_index == #dmem);
+         $sticky_zero = '0;
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               let rd = '$rd'.asBool(false);
-               let mod = '$wr'.asBool(false);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? '$sticky_zero' : this.svSigRef(`${name}`);
+               
+               let dmem_rd_en = siggen(`DmemViz_viz_dmem_rd_en_a0`);
+               let dmem_rd_index = siggen(`DmemViz_viz_dmem_rd_index_a0`);
+               let wr = siggen(`L1_Dmem[${this.getIndex()}].L1_wr_a0`);
+               let value = siggen(`Dmem_value_a1(${this.getIndex()})`);
+               
+               let rd = dmem_rd_en.asBool() && dmem_rd_index.asInt() == this.getIndex();
+               let mod = wr.asBool(false);
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
                let newValStr = regIdent + ": ";
-               let dmem_str = new fabric.Text(regIdent + ": " + '>>1$value'.asInt(NaN).toString(), {
+               let dmem_str = new fabric.Text(regIdent + ": " + value.asInt(NaN).toString(), {
                   top: 18 * this.getIndex() - 40,
                   left: 480,
                   fontSize: 14,
@@ -707,8 +715,9 @@ m4+definitions(['
    //  o data memory
    //  o CPU visualization
    //|cpu
-   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
-   m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
+   //m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   //m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
    
    m4+cpu_viz()    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
