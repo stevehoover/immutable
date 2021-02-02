@@ -19,6 +19,8 @@ m4+definitions(['
       assign instrs = '{
          m4_instr0['']m4_forloop(['m4_instr_ind'], 1, M4_NUM_INSTRS, [', m4_echo(['m4_instr']m4_instr_ind)'])
       };
+      logic sticky_zero;
+      assign sticky_zero = 0;
    
    // mnemonic from warp-v lib expects all is_* to be defined
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
@@ -96,7 +98,6 @@ m4+definitions(['
       assign instr_strs = '{m4_asm_mem_expr "END                                     "};
    
    /cpuviz
-      $sticky_zero = 1'b0;
       $fetch_instr_str[40*8-1:0] = *instr_strs\[/top$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
       \viz_alpha
          initEach() {
@@ -150,12 +151,12 @@ m4+definitions(['
             debugger
             //
             var missing_list = "";
-            
+            let sticky_zero = this.svSigRef(`sticky_zero`);
             siggen = (name) => {
                var sig = this.svSigRef(`L0_${name}_a0`)
                if (sig == null) {
                   missing_list += `◾ $${name}      \n`;
-                  sig         = '$sticky_zero';
+                  sig         = sticky_zero;
                }
                return sig
             }
@@ -163,7 +164,7 @@ m4+definitions(['
             siggen_rf_dmem = (name, scope) => {
                var sig = this.svSigRef(`${scope}_${name}_a0`)
                if (sig == null) {
-                  sig         = '$sticky_zero';
+                  sig         = sticky_zero;
                }
                return sig
             }
@@ -400,7 +401,6 @@ m4+definitions(['
          }
       
       /imem[m4_eval(M4_NUM_INSTRS-1):0]  // TODO: Cleanly report non-integer ranges.
-         $rd_viz = !/top$reset && /top$pc[31:2] == #imem;
          $instr[31:0] = *instrs\[#imem\];
          $instr_str[40*8-1:0] = *instr_strs[imem];
          \viz_alpha
@@ -421,6 +421,9 @@ m4+definitions(['
             },
             renderEach: function() {
                // Instruction memory is constant, so just create it once.
+               let reset = this.svSigRef(`L0_reset_a0`);
+               let pc = this.svSigRef(`L0_pc_a0`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`L0_pc_a0`);
+               let rd_viz = !reset.asBool() && (pc.asInt() >> 2) == this.getIndex();
                if (!global.instr_mem_drawn) {
                   global.instr_mem_drawn = [];
                }
@@ -433,17 +436,16 @@ m4+definitions(['
                   this.getInitObject("binary").setText(binary_str)
                   this.getInitObject("disassembled").setText(disassembled_str)
                }
-               this.getInitObject("disassembled").set({textBackgroundColor: '$rd_viz'.asBool() ? "#b0ffff" : "white"})
+               this.getInitObject("disassembled").set({textBackgroundColor: rd_viz ? "#b0ffff" : "white"})
             }
       
       /xreg[31:0]
-         $sticky_zero = '0;
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               siggen = (name) => this.svSigRef(`${name}`) == null ? '$sticky_zero' : this.svSigRef(`${name}`);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`${name}`);
                let rf_rd_en1 = siggen(`RfViz_viz_rf_rd_en1_a0`);
                let rf_rd_index1 = siggen(`RfViz_viz_rf_rd_index1_a0`);
                let rf_rd_en2 = siggen(`RfViz_viz_rf_rd_en1_a0`);
@@ -477,13 +479,12 @@ m4+definitions(['
             }
          
       /dmem[31:0]
-         $sticky_zero = '0;
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               siggen = (name) => this.svSigRef(`${name}`) == null ? '$sticky_zero' : this.svSigRef(`${name}`);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`${name}`);
                
                let dmem_rd_en = siggen(`DmemViz_viz_dmem_rd_en_a0`);
                let dmem_rd_index = siggen(`DmemViz_viz_dmem_rd_index_a0`);
@@ -715,9 +716,9 @@ m4+definitions(['
    //  o data memory
    //  o CPU visualization
    //|cpu
-   //m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
-   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
-   //m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
+   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   //m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
    
    m4+cpu_viz()    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
