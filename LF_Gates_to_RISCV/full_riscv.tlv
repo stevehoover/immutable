@@ -21,24 +21,6 @@ m4+definitions(['
       };
       logic sticky_zero;
       assign sticky_zero = 0;
-   
-   // mnemonic from warp-v lib expects all is_* to be defined
-   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /defaults
-      {$is_lui, $is_auipc, $is_jal, $is_jalr, $is_beq, $is_bne, $is_blt, $is_bge, $is_bltu, $is_bgeu, $is_lb, $is_lh, $is_lw, $is_lbu, $is_lhu, $is_sb, $is_sh, $is_sw} = '0;
-      {$is_addi, $is_slti, $is_sltiu, $is_xori, $is_ori, $is_andi, $is_slli, $is_srli, $is_srai, $is_add, $is_sub, $is_sll, $is_slt, $is_sltu, $is_xor} = '0;
-      {$is_srl, $is_sra, $is_or, $is_and, $is_csrrw, $is_csrrs, $is_csrrc, $is_csrrwi, $is_csrrsi, $is_csrrci} = '0;
-      {$is_load, $is_store} = '0;
-      `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr $is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_lb $is_lh $is_lw $is_lbu $is_lhu $is_sb $is_sh $is_sw)
-      `BOGUS_USE($is_addi $is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai $is_add $is_sub $is_sll $is_slt $is_sltu $is_xor)
-      `BOGUS_USE($is_srl $is_sra $is_or $is_and $is_csrrw $is_csrrs $is_csrrc $is_csrrwi $is_csrrsi $is_csrrci)
-   
-   $ANY = /defaults<>0$ANY;
-   
-   m4_define(['m4_modified_mnemonic_expr'], ['m4_patsubst(m4_mnemonic_expr, ['_instr'], [''])'])
-   $mnemonic[10*8-1:0] = m4_modified_mnemonic_expr $is_load ? "LOAD      " : $is_store ? "STORE     " : "ILLEGAL   ";
-   `BOGUS_USE($mnemonic);
-   '])
 
 \TLV rf(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data, $_port3_en, $_port3_index, $$_port3_data)
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
@@ -100,7 +82,7 @@ m4+definitions(['
    /cpuviz
       $fetch_instr_str[40*8-1:0] = *instr_strs\[/top$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
       \viz_alpha
-         initEach() {
+         initEach() {            
             let imem_header = new fabric.Text("📒 Instr. Memory", {
                   top: -29,
                   left: -440,
@@ -169,6 +151,19 @@ m4+definitions(['
                return sig
             }
             
+            siggen_mnemonic = () => {
+               instrs = ["lui", "auipc", "jal", "jalr", "beq", "bne", "blt", "bge", "bltu", "bgeu", "lb", "lh", "lw", "lbu", "lhu", "sb", "sh", "sw", "addi", "slti", "sltiu", "xori", "ori", "andi", "slli", "srli", "srai", "add", "sub", "sll", "slt", "sltu", "xor", "srl", "sra", "or", "and", "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci", "load", "store"];
+                  for(i=0;i<instrs.length;i++) {
+                     var sig = this.svSigRef(`L0_is_${instrs[i]}_a0`)
+                     if(sig != null) {
+                        if (sig.asBool()) {
+                           return instrs[i].toUpperCase()
+                        }
+                     }
+                  }
+                  return "ILLEGAL"
+            }
+            
             let example       =   siggen("error_eg")
             let pc            =   siggen("pc");
             let rd_valid      =   siggen("rd_valid");
@@ -183,7 +178,7 @@ m4+definitions(['
             let rs1_valid     =   siggen("rs1_valid");
             let rs2_valid     =   siggen("rs2_valid");
             let valid         =   siggen("valid");
-            let mnemonic      =   siggen("mnemonic");
+            let mnemonic      =   siggen_mnemonic();
             
             let rf_rd_en1     =   siggen_rf_dmem("viz_rf_rd_en1", "RfViz")   
             let rf_rd_index1  =   siggen_rf_dmem("viz_rf_rd_index1", "RfViz")      
@@ -264,7 +259,7 @@ m4+definitions(['
                           : "";
             };
             let str = `${regStr(rd_valid.asBool(false), rd.asInt(NaN), result.asInt(NaN))}\n` +
-                      `  = ${mnemonic.asString()}${srcStr(1, rs1_valid, rs1, src1_value)}${srcStr(2, rs2_valid, rs2, src2_value)}\n` +
+                      `  = ${mnemonic}${srcStr(1, rs1_valid, rs1, src1_value)}${srcStr(2, rs2_valid, rs2, src2_value)}\n` +
                       `      ${immStr(imm_valid.asBool(false), imm.asBinaryStr())}`;
             let instrWithValues = new fabric.Text(str, {
                top: 70,
