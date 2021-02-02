@@ -40,7 +40,7 @@ m4+definitions(['
 
 \TLV rf(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data, $_port3_en, $_port3_index, $$_port3_data)
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
-   /xreg_viz
+   /rf_viz
       $ANY = /top<>0$ANY;
       $viz_rf_reset = m4_argn(3, $@);
       $viz_rf_wr_en = m4_argn(4, $@);
@@ -54,14 +54,14 @@ m4+definitions(['
       $viz_rf_rd_index2[\$clog2(_entries)-1:0] = m4_argn(11, $@);
    
    /xreg[_entries-1:0]
-      $ANY = /top/xreg_viz<>0$ANY;
+      $ANY = /top/rf_viz<>0$ANY;
       $wr                  =  $viz_rf_wr_en && ($viz_rf_wr_index == #xreg);
       $value[_width-1:0]   =  $viz_rf_reset    ?  #xreg                  :
                               >>1$wr               ?  >>1$viz_rf_wr_data :
                                                       $RETAIN;
    
-   $$_port2_data[_width-1:0]  =  /top/xreg_viz<>0$viz_rf_rd_en1 ? /xreg[/top/xreg_viz<>0$viz_rf_rd_index1]$value : 'X;
-   $$_port3_data[_width-1:0]  =  /top/xreg_viz<>0$viz_rf_rd_en2 ? /xreg[/top/xreg_viz<>0$viz_rf_rd_index2]$value : 'X;
+   $$_port2_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en1 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index1]$value : 'X;
+   $$_port3_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en2 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index2]$value : 'X;
    '])
    
 
@@ -159,6 +159,15 @@ m4+definitions(['
                }
                return sig
             }
+            
+            siggen_rf_dmem = (name, scope) => {
+               var sig = this.svSigRef(`${scope}_${name}_a0`)
+               if (sig == null) {
+                  sig         = '$sticky_zero';
+               }
+               return sig
+            }
+            
             var example       =   siggen("error_eg")
             var pc            =   siggen("pc");
             var rd_valid      =   siggen("rd_valid");
@@ -174,7 +183,18 @@ m4+definitions(['
             var rs2_valid     =   siggen("rs2_valid");
             var valid         =   siggen("valid");
             var mnemonic      =   siggen("mnemonic");
-            var rf_wr_data    =   siggen("rf_wr_data");
+            
+            var rf_rd_en1     =   siggen_rf_dmem("viz_rf_rd_en1", "RfViz")   
+            var rf_rd_index1  =   siggen_rf_dmem("viz_rf_rd_index1", "RfViz")      
+            var rf_rd_en2     =   siggen_rf_dmem("viz_rf_rd_en2", "RfViz")   
+            var rf_rd_index2  =   siggen_rf_dmem("viz_rf_rd_index2", "RfViz")      
+            var rf_wr_en      =   siggen_rf_dmem("viz_rf_wr_en", "RfViz")  
+            var rf_wr_index   =   siggen_rf_dmem("viz_rf_wr_index", "RfViz")     
+            var rf_wr_data    =   siggen_rf_dmem("viz_rf_wr_data", "RfViz")
+            var dmem_rd_en    =   siggen_rf_dmem("viz_dmem_rd_en", "DmemViz")    
+            var dmem_rd_index =   siggen_rf_dmem("viz_dmem_rd_index", "DmemViz")       
+            var dmem_wr_en    =   siggen_rf_dmem("viz_dmem_wr_en", "DmemViz")    
+            var dmem_wr_index =   siggen_rf_dmem("viz_dmem_wr_index", "DmemViz")       
             
             let color = !(valid.asBool()) ? "gray" :
                                             "blue";
@@ -190,30 +210,30 @@ m4+definitions(['
                strokeWidth: 2
             })
             
-            let rs1_arrow = new fabric.Line([330, 18 * '/top/xreg_viz<>0$viz_rf_rd_index1'.asInt() + 6 - 40, 190, 75 + 18 * 2], {
+            let rs1_arrow = new fabric.Line([330, 18 * rf_rd_index1.asInt() + 6 - 40, 190, 75 + 18 * 2], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '/top/xreg_viz<>0$viz_rf_rd_en1'.asBool()
+               visible: rf_rd_en1.asBool()
             })
-            let rs2_arrow = new fabric.Line([330, 18 * '/top/xreg_viz<>0$viz_rf_rd_index2'.asInt() + 6 - 40, 190, 75 + 18 * 3], {
+            let rs2_arrow = new fabric.Line([330, 18 * rf_rd_index2.asInt() + 6 - 40, 190, 75 + 18 * 3], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '/top/xreg_viz<>0$viz_rf_rd_en2'.asBool()
+               visible: rf_rd_en2.asBool()
             })
-            let rd_arrow = new fabric.Line([310, 18 * '/top/xreg_viz<>0$viz_rf_wr_index'.asInt() + 6 - 40, 168, 75 + 18 * 0], {
+            let rd_arrow = new fabric.Line([310, 18 * rf_wr_index.asInt() + 6 - 40, 168, 75 + 18 * 0], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '/top/xreg_viz<>0$viz_rf_wr_en'.asBool()
+               visible: rf_wr_en.asBool()
             })
-            let ld_arrow = new fabric.Line([470, 18 * '/top/dmem_viz<>0$viz_dmem_rd_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
+            let ld_arrow = new fabric.Line([470, 18 * dmem_rd_index.asInt() + 6 - 40, 175, 75 + 18 * 1], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '/top/dmem_viz<>0$viz_dmem_rd_en'.asBool()
+               visible: dmem_rd_en.asBool()
             })
-            let st_arrow = new fabric.Line([470, 18 * '/top/dmem_viz<>0$viz_dmem_wr_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
+            let st_arrow = new fabric.Line([470, 18 * dmem_wr_index.asInt() + 6 - 40, 175, 75 + 18 * 1], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '/top/dmem_viz<>0$viz_dmem_wr_en'.asBool()
+               visible: dmem_wr_en.asBool()
             })
             //
             // Fetch Instruction
@@ -295,14 +315,14 @@ m4+definitions(['
             
             let load_viz = new fabric.Text(rf_wr_data.asInt(0).toString(), {
                left: 470,
-               top: 18 * '/top/dmem_viz<>0$viz_dmem_rd_index'.asInt() + 6 - 40,
+               top: 18 * dmem_rd_index.asInt() + 6 - 40,
                fill: "blue",
                fontSize: 14,
                fontFamily: "monospace",
                fontWeight: 1000,
                visible: false
             })
-            if ('/top/dmem_viz<>0$viz_dmem_rd_en'.asBool()) {
+            if (dmem_rd_en.asBool()) {
                setTimeout(() => {
                   load_viz.setVisible(true)
                   load_viz.animate({left: 165, top: 75 + 18 * 1 - 5}, {
@@ -311,7 +331,7 @@ m4+definitions(['
                   })
                   setTimeout(() => {
                      load_viz.setVisible(true)
-                     load_viz.animate({left: 350, top: 18 * '/top/xreg_viz<>0$viz_rf_wr_index'.asInt() - 40}, {
+                     load_viz.animate({left: 350, top: 18 * rf_wr_index.asInt() - 40}, {
                        onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                        duration: 500
                      })
@@ -328,10 +348,10 @@ m4+definitions(['
                fontWeight: 1000,
                visible: false
             })
-            if ('/top/dmem_viz<>0$viz_dmem_wr_en'.asBool()) {
+            if (dmem_wr_en.asBool()) {
                setTimeout(() => {
                   store_viz.setVisible(true)
-                  store_viz.animate({left: 515, top: 18 * '/top/dmem_viz<>0$viz_dmem_wr_index'.asInt() - 40}, {
+                  store_viz.animate({left: 515, top: 18 * dmem_wr_index.asInt() - 40}, {
                     onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                     duration: 500
                   })
@@ -356,7 +376,7 @@ m4+definitions(['
                fontWeight: 800,
                visible: false
             })
-            if (rd_valid.asBool() && !'/top/dmem_viz<>0$viz_dmem_rd_en'.asBool()) {
+            if (rd_valid.asBool() && !dmem_rd_en.asBool()) {
                setTimeout(() => {
                   result_viz.setVisible(true)
                   result_shadow.setVisible(true)
@@ -422,8 +442,8 @@ m4+definitions(['
       
       /xreg[31:0]
          $ANY = /top/xreg<>0$ANY;
-         $rd = (/top/xreg_viz<>0$viz_rf_rd_en1 && (/top/xreg_viz<>0$viz_rf_rd_index1 == #xreg)) ||
-               (/top/xreg_viz<>0$viz_rf_rd_en2 && (/top/xreg_viz<>0$viz_rf_rd_index2 == #xreg));
+         $rd = (/top/rf_viz<>0$viz_rf_rd_en1 && (/top/rf_viz<>0$viz_rf_rd_index1 == #xreg)) ||
+               (/top/rf_viz<>0$viz_rf_rd_en2 && (/top/rf_viz<>0$viz_rf_rd_index2 == #xreg));
          //$wr = (/top/cpuviz$rf_wr_en && (/top/cpuviz$rf_wr_index == #xreg));
          \viz_alpha
             initEach: function() {
