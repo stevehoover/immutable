@@ -21,6 +21,9 @@ m4+definitions(['
       };
       logic sticky_zero;
       assign sticky_zero = 0;
+   $valid = !*failed;
+   `BOGUS_USE($valid)
+      
 
 \TLV rf(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data, $_port3_en, $_port3_index, $$_port3_data)
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
@@ -688,7 +691,6 @@ m4+definitions(['
    //13
    $is_jump             =  $is_jal || $is_jalr;
    $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
-   $valid = 1'b1;
    
 
    //14
