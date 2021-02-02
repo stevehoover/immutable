@@ -38,44 +38,49 @@ m4+definitions(['
    `BOGUS_USE($mnemonic);
    '])
 
-\TLV rf(_entries, _width, $_reset, _port1_mode, $_port1_en, $_port1_index, $_port1_data, _port2_mode, $_port2_en, $_port2_index, $$_port2_data, _port3_mode, $_port3_en, $_port3_index, $$_port3_data)
-   /xreg[_entries-1:0]
-      /* m4_argn(4, $@) */
-      /* m4_forloop(['m4_regport_loop'], 1, 4, ['m4_argn(m4_eval(1 + m4_regport_loop * 4), $@)'])*/
-      //$wr = m4_forloop(['m4_regport_loop'], 1, 4, ['m4_ifelse_block(['['_port']m4_regport_loop['_mode']'], W, ['['$_port']m4_regport_loop['_en'] || '], [''])'])
-      $wr                  =  /top$_port1_en && (/top$_port1_index != 5'b0) && (/top$_port1_index == #xreg);
-      $value[_width-1:0]   =  /top$_reset    ?  #xreg               :   
-                              >>1$wr         ?  /top>>1$_port1_data :   
-                                                $RETAIN;   
-   
-   $$_port2_data[_width-1:0]  =  $_port2_en ? /xreg[/top$_port2_index]$value : 'X;
-   $$_port3_data[_width-1:0]  =  $_port3_en ? /xreg[/top$_port3_index]$value : 'X;
+\TLV rf(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data, $_port3_en, $_port3_index, $$_port3_data)
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /cpuviz
-      $rf_rd_en1 = /top$_port2_en;
-      $rf_rd_en2 = /top$_port3_en;
-      $rf_rd_index1[\$clog2(_entries)-1:0] = /top$_port2_index;
-      $rf_rd_index2[\$clog2(_entries)-1:0] = /top$_port3_index;
-      $rf_wr_index[\$clog2(_entries)-1:0]  = /top$_port1_index;
-      $rf_wr_en = /top$_port1_en;
+   $viz_rf_reset = m4_argn(3, $@);
+   $viz_rf_wr_en = m4_argn(4, $@);
+   $viz_rf_wr_index[\$clog2(_entries)-1:0]  = m4_argn(5, $@);
+   $viz_rf_wr_data[31:0] = m4_argn(6, $@);
+   
+   $viz_rf_rd_en1 = m4_argn(7, $@);
+   $viz_rf_rd_index1[\$clog2(_entries)-1:0] = m4_argn(8, $@);
+   
+   $viz_rf_rd_en2 = m4_argn(10, $@);
+   $viz_rf_rd_index2[\$clog2(_entries)-1:0] = m4_argn(11, $@);
    '])
-
-\TLV dmem(_entries, _width, $_reset, _port1_mode, $_port1_en, $_port1_index, $_port1_data, _port2_mode, $_port2_en, $_port2_index, $$_port2_data)
-   /dmem[_entries-1:0]
-      //$wr = m4_forloop(['m4_regport_loop'], 1, 4, ['m4_ifelse_block(['['_port']m4_regport_loop['_mode']'], W, ['['$_port']m4_regport_loop['_en'] || '], [''])'])
-      $wr                  =  /top$_port1_en && (/top$_port1_index == #dmem);
-      $value[_width-1:0]   =  /top$_reset    ?     #dmem               :   
-                              >>1$wr         ?     /top>>1$_port1_data :   
-                                                   $RETAIN;
    
-   $$_port2_data[_width-1:0] = $_port2_en ? /dmem[/top$_port2_index]$value : 'X;
-   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /cpuviz
-      $dmem_rd_en = /top$_port2_en;
-      $dmem_rd_index[\$clog2(_entries)-1:0] = /top$_port2_index;
-      $dmem_wr_en = /top$_port1_en;
-      $dmem_wr_index[\$clog2(_entries)-1:0] = /top$_port1_index;
-   '])   
+   /xreg[_entries-1:0]
+      $wr                  =  /top$viz_rf_wr_en && (/top$viz_rf_wr_index == #xreg);
+      $value[_width-1:0]   =  /top$viz_rf_reset    ?  #xreg               :
+                              >>1$wr               ?  /top>>1$viz_rf_wr_data :
+                                                      $RETAIN;
+   
+   $$_port2_data[_width-1:0]  =  $viz_rf_rd_en1 ? /xreg[/top$viz_rf_rd_index1]$value : 'X;
+   $$_port3_data[_width-1:0]  =  $viz_rf_rd_en2 ? /xreg[/top$viz_rf_rd_index2]$value : 'X;
+   
+
+\TLV dmem(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data)
+   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
+   $viz_dmem_reset = m4_argn(3, $@);
+   
+   $viz_dmem_wr_en = m4_argn(4, $@);
+   $viz_dmem_wr_index[\$clog2(_entries)-1:0] = m4_argn(5, $@);
+   
+   $viz_dmem_rd_en = m4_argn(7, $@);;
+   $viz_dmem_rd_index[\$clog2(_entries)-1:0] = m4_argn(8, $@);;
+   '])
+   
+   /dmem[_entries-1:0]
+      $wr                  =  /top$viz_dmem_wr_en && (/top$viz_dmem_wr_index == #dmem);
+      $value[_width-1:0]   =  /top$viz_dmem_reset    ?     #dmem               :   
+                              >>1$wr                 ?     /top>>1$_port1_data :   
+                                                           $RETAIN;
+   
+   $$_port2_data[_width-1:0] = $viz_dmem_rd_en ? /dmem[/top$viz_dmem_rd_index]$value : 'X;
+   
 
 \TLV cpu_viz()
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
@@ -88,7 +93,7 @@ m4+definitions(['
       $sticky_zero = 1'b0;
       
       $fetch_instr_str[40*8-1:0] = *instr_strs\[/top$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
-      
+      $ANY = /top<>0$ANY;
       \viz_alpha
          initEach() {
             let imem_header = new fabric.Text("📒 Instr. Memory", {
@@ -181,30 +186,30 @@ m4+definitions(['
                strokeWidth: 2
             })
             
-            let rs1_arrow = new fabric.Line([330, 18 * '$rf_rd_index1'.asInt() + 6 - 40, 190, 75 + 18 * 2], {
+            let rs1_arrow = new fabric.Line([330, 18 * '$viz_rf_rd_index1'.asInt() + 6 - 40, 190, 75 + 18 * 2], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '$rf_rd_en1'.asBool()
+               visible: '$viz_rf_rd_en1'.asBool()
             })
-            let rs2_arrow = new fabric.Line([330, 18 * '$rf_rd_index2'.asInt() + 6 - 40, 190, 75 + 18 * 3], {
+            let rs2_arrow = new fabric.Line([330, 18 * '$viz_rf_rd_index2'.asInt() + 6 - 40, 190, 75 + 18 * 3], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '$rf_rd_en2'.asBool()
+               visible: '$viz_rf_rd_en2'.asBool()
             })
-            let rd_arrow = new fabric.Line([310, 18 * '$rf_wr_index'.asInt() + 6 - 40, 168, 75 + 18 * 0], {
+            let rd_arrow = new fabric.Line([310, 18 * '$viz_rf_wr_index'.asInt() + 6 - 40, 168, 75 + 18 * 0], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '$rf_wr_en'.asBool()
+               visible: '$viz_rf_wr_en'.asBool()
             })
-            let ld_arrow = new fabric.Line([470, 18 * '$dmem_rd_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
+            let ld_arrow = new fabric.Line([470, 18 * '$viz_dmem_rd_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '$dmem_rd_en'.asBool()
+               visible: '$viz_dmem_rd_en'.asBool()
             })
-            let st_arrow = new fabric.Line([470, 18 * '$dmem_wr_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
+            let st_arrow = new fabric.Line([470, 18 * '$viz_dmem_wr_index'.asInt() + 6 - 40, 175, 75 + 18 * 1], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '$dmem_wr_en'.asBool()
+               visible: '$viz_dmem_wr_en'.asBool()
             })
             //
             // Fetch Instruction
@@ -286,14 +291,14 @@ m4+definitions(['
             
             let load_viz = new fabric.Text(rf_wr_data.asInt(0).toString(), {
                left: 470,
-               top: 18 * '$dmem_rd_index'.asInt() + 6 - 40,
+               top: 18 * '$viz_dmem_rd_index'.asInt() + 6 - 40,
                fill: "blue",
                fontSize: 14,
                fontFamily: "monospace",
                fontWeight: 1000,
                visible: false
             })
-            if ('$dmem_rd_en'.asBool()) {
+            if ('$viz_dmem_rd_en'.asBool()) {
                setTimeout(() => {
                   load_viz.setVisible(true)
                   load_viz.animate({left: 165, top: 75 + 18 * 1 - 5}, {
@@ -302,12 +307,12 @@ m4+definitions(['
                   })
                   setTimeout(() => {
                      load_viz.setVisible(true)
-                     load_viz.animate({left: 350, top: 18 * '$rf_wr_index'.asInt() - 40}, {
+                     load_viz.animate({left: 350, top: 18 * '$viz_rf_wr_index'.asInt() - 40}, {
                        onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                        duration: 500
                      })
                      }, 1000)
-               }, 1000)
+               }, 500)
             }
             
             let store_viz = new fabric.Text(src2_value.asInt(0).toString(), {
@@ -319,10 +324,10 @@ m4+definitions(['
                fontWeight: 1000,
                visible: false
             })
-            if ('$dmem_wr_en'.asBool()) {
+            if ('$viz_dmem_wr_en'.asBool()) {
                setTimeout(() => {
                   store_viz.setVisible(true)
-                  store_viz.animate({left: 515, top: 18 * '$dmem_wr_index'.asInt() - 40}, {
+                  store_viz.animate({left: 515, top: 18 * '$viz_dmem_wr_index'.asInt() - 40}, {
                     onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                     duration: 500
                   })
@@ -347,7 +352,7 @@ m4+definitions(['
                fontWeight: 800,
                visible: false
             })
-            if (rd_valid.asBool() && !'$dmem_rd_en'.asBool()) {
+            if (rd_valid.asBool() && !'$viz_dmem_rd_en'.asBool()) {
                setTimeout(() => {
                   result_viz.setVisible(true)
                   result_shadow.setVisible(true)
@@ -413,8 +418,8 @@ m4+definitions(['
       
       /xreg[31:0]
          $ANY = /top/xreg<>0$ANY;
-         $rd = (/top/cpuviz$rf_rd_en1 && (/top/cpuviz$rf_rd_index1 == #xreg)) ||
-               (/top/cpuviz$rf_rd_en2 && (/top/cpuviz$rf_rd_index2 == #xreg));
+         $rd = (/top$viz_rf_rd_en1 && (/top$viz_rf_rd_index1 == #xreg)) ||
+               (/top$viz_rf_rd_en2 && (/top$viz_rf_rd_index2 == #xreg));
          //$wr = (/top/cpuviz$rf_wr_en && (/top/cpuviz$rf_wr_index == #xreg));
          \viz_alpha
             initEach: function() {
@@ -447,7 +452,7 @@ m4+definitions(['
          
       /dmem[31:0]
          $ANY = /top/dmem<>0$ANY;
-         $rd = (/cpuviz$dmem_rd_en && /cpuviz$dmem_rd_index == #dmem);
+         $rd = (/top$viz_dmem_rd_en && /top$viz_dmem_rd_index == #dmem);
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
@@ -604,9 +609,9 @@ m4+definitions(['
    //$result[31:0] =   $is_addi ?  $src1_value + $imm :
    //                  $is_add  ?  $src1_value + $src2_value :
    //                              32'bx;
-   $rf_wr_en            =     $rd_valid && ($rd != 5'b0);
+   //$rf_wr_en            =     $rd_valid && ($rd != 5'b0);
    //$rf_wr_index[4:0]    =     $rd;
-   $rf_wr_data[31:0]    =     $is_load ? $ld_data : $result; // 14
+   //$rf_wr_data[31:0]    =     $is_load ? $ld_data : $result; // 14
 
    //9- Branch
    $taken_br   =  $is_beq  ?  ($src1_value == $src2_value) :
@@ -678,8 +683,8 @@ m4+definitions(['
    //  o data memory
    //  o CPU visualization
    //|cpu
-   m4+rf(32, 32, $reset, W, $rf_wr_en, $rd, $rf_wr_data, R, $rs1_valid, $rs1, $$src1_value[31:0], R, $rs2_valid, $rs2, $$src2_value[31:0])
-   m4+dmem(32, 32, $reset, W, $is_s_instr, $result[6:2], $src2_value, R, $is_load, $result[6:2], $$ld_data[31:0])
+   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
    
    m4+cpu_viz()    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
