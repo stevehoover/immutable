@@ -1,9 +1,5 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   // This code can be found in: https://github.com/stevehoover/RISC-V_MYTH_Workshop
-   
-   //m4_include_url(['https://raw.githubusercontent.com/shivampotdar/LF-Build-a-RISC-V-Workshop/main/tlv_lib/risc-v_shell_lib.tlv'])
-\SV
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/warp-v_includes/2d6d36baa4d2bc62321f982f78c8fe1456641a43/risc-v_defs.tlv'])
 
 m4+definitions(['
@@ -23,63 +19,61 @@ m4+definitions(['
       assign instrs = '{
          m4_instr0['']m4_forloop(['m4_instr_ind'], 1, M4_NUM_INSTRS, [', m4_echo(['m4_instr']m4_instr_ind)'])
       };
-   
-   // mnemonic from warp-v lib expects all is_* to be defined
-   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /defaults
-      {$is_lui, $is_auipc, $is_jal, $is_jalr, $is_beq, $is_bne, $is_blt, $is_bge, $is_bltu, $is_bgeu, $is_lb, $is_lh, $is_lw, $is_lbu, $is_lhu, $is_sb, $is_sh, $is_sw} = '0;
-      {$is_addi, $is_slti, $is_sltiu, $is_xori, $is_ori, $is_andi, $is_slli, $is_srli, $is_srai, $is_add, $is_sub, $is_sll, $is_slt, $is_sltu, $is_xor} = '0;
-      {$is_srl, $is_sra, $is_or, $is_and, $is_csrrw, $is_csrrs, $is_csrrc, $is_csrrwi, $is_csrrsi, $is_csrrci} = '0;
-      {$is_load, $is_store} = '0;
-      `BOGUS_USE($is_lui $is_auipc $is_jal $is_jalr $is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_lb $is_lh $is_lw $is_lbu $is_lhu $is_sb $is_sh $is_sw)
-      `BOGUS_USE($is_addi $is_slti $is_sltiu $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai $is_add $is_sub $is_sll $is_slt $is_sltu $is_xor)
-      `BOGUS_USE($is_srl $is_sra $is_or $is_and $is_csrrw $is_csrrs $is_csrrc $is_csrrwi $is_csrrsi $is_csrrci)
-   
-   $ANY = /defaults<>0$ANY;
-   
-   m4_define(['m4_modified_mnemonic_expr'], ['m4_patsubst(m4_mnemonic_expr, ['_instr'], [''])'])
-   $mnemonic[10*8-1:0] = m4_modified_mnemonic_expr $is_load ? "LOAD      " : $is_store ? "STORE     " : "ILLEGAL   ";
-   `BOGUS_USE($mnemonic);
-   '])
+      logic sticky_zero;
+      assign sticky_zero = 0;
+   $valid = !*failed;
+   `BOGUS_USE($valid)
+      
 
-\TLV rf(_entries, _width, $_reset, _port1_mode, $_port1_en, $_port1_index, $_port1_data, _port2_mode, $_port2_en, $_port2_index, $$_port2_data, _port3_mode, $_port3_en, $_port3_index, $$_port3_data)
+\TLV rf(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data, $_port3_en, $_port3_index, $$_port3_data)
+   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
+   /rf_viz
+      $ANY = /top<>0$ANY;
+      $viz_rf_reset = m4_argn(3, $@);
+      $viz_rf_wr_en = m4_argn(4, $@);
+      $viz_rf_wr_index[\$clog2(_entries)-1:0]  = m4_argn(5, $@);
+      $viz_rf_wr_data[_width-1:0] = m4_argn(6, $@);
+
+      $viz_rf_rd_en1 = m4_argn(7, $@);
+      $viz_rf_rd_index1[\$clog2(_entries)-1:0] = m4_argn(8, $@);
+
+      $viz_rf_rd_en2 = m4_argn(10, $@);
+      $viz_rf_rd_index2[\$clog2(_entries)-1:0] = m4_argn(11, $@);
+   
    /xreg[_entries-1:0]
-      /* m4_argn(4, $@) */
-      /* m4_forloop(['m4_regport_loop'], 1, 4, ['m4_argn(m4_eval(1 + m4_regport_loop * 4), $@)'])*/
-      //$wr = m4_forloop(['m4_regport_loop'], 1, 4, ['m4_ifelse_block(['['_port']m4_regport_loop['_mode']'], W, ['['$_port']m4_regport_loop['_en'] || '], [''])'])
-      $wr                  =  /top$_port1_en && (/top$_port1_index != 5'b0) && (/top$_port1_index == #xreg);
-      $value[_width-1:0]   =  /top$_reset    ?  #xreg               :   
-                              >>1$wr         ?  >>1/top$_port1_data :   
-                                                $RETAIN;   
+      $ANY = /top/rf_viz<>0$ANY;
+      $wr                  =  $viz_rf_wr_en && ($viz_rf_wr_index == #xreg);
+      $value[_width-1:0]   =  $viz_rf_reset    ?  #xreg              :
+                              >>1$wr           ?  >>1$viz_rf_wr_data :
+                                                  $RETAIN;
    
-   $$_port2_data[_width-1:0]  =  $_port2_en ? /xreg[/top$_port2_index]$value : 'X;
-   $$_port3_data[_width-1:0]  =  $_port3_en ? /xreg[/top$_port3_index]$value : 'X;
-   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /cpuviz
-      $rf_rd_en1 = /top$_port2_en;
-      $rf_rd_en2 = /top$_port3_en;
-      $rf_rd_index1[\$clog2(_entries)-1:0] = /top$_port2_index;
-      $rf_rd_index2[\$clog2(_entries)-1:0] = /top$_port3_index;
-      $rf_wr_index[\$clog2(_entries)-1:0]  = /top$_port1_index;
-      $rf_wr_en = /top$_port1_en;
+   $$_port2_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en1 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index1]$value : 'X;
+   $$_port3_data[_width-1:0]  =  /top/rf_viz<>0$viz_rf_rd_en2 ? /xreg[/top/rf_viz<>0$viz_rf_rd_index2]$value : 'X;
    '])
-
-\TLV dmem(_entries, _width, $_reset, _port1_mode, $_port1_en, $_port1_index, $_port1_data, _port2_mode, $_port2_en, $_port2_index, $$_port2_data)
-   /dmem[_entries-1:0]
-      //$wr = m4_forloop(['m4_regport_loop'], 1, 4, ['m4_ifelse_block(['['_port']m4_regport_loop['_mode']'], W, ['['$_port']m4_regport_loop['_en'] || '], [''])'])
-      $wr                  =  /top$_port1_en && (/top$_port1_index == #dmem);
-      $value[_width-1:0]   =  /top$_reset    ?     #dmem               :   
-                              >>1$wr         ?     >>1/top$_port1_data :   
-                                                   $RETAIN;
    
-   $$_port2_data[_width-1:0] = $_port2_en ? /dmem[/top$_port2_index]$value : 'X;
-   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['   
-   /cpuviz
-      $dmem_rd_en = /top$_port2_en;
-      $dmem_rd_index[\$clog2(_entries)-1:0] = /top$_port2_index;
-      $dmem_wr_en = /top$_port1_en;
-      $dmem_wr_index[\$clog2(_entries)-1:0] = /top$_port1_index;
-   '])   
+
+\TLV dmem(_entries, _width, $_reset, $_port1_en, $_port1_index, $_port1_data, $_port2_en, $_port2_index, $$_port2_data)
+   m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
+   /dmem_viz
+      $ANY = /top<>0$ANY;
+      $viz_dmem_reset = m4_argn(3, $@);
+
+      $viz_dmem_wr_en = m4_argn(4, $@);
+      $viz_dmem_wr_index[\$clog2(_entries)-1:0] = m4_argn(5, $@);
+      $viz_dmem_wr_data[_width-1:0] = m4_argn(6, $@);
+
+      $viz_dmem_rd_en = m4_argn(7, $@);
+      $viz_dmem_rd_index[\$clog2(_entries)-1:0] = m4_argn(8, $@);
+   
+   /dmem[_entries-1:0]
+      $ANY = /top/dmem_viz<>0$ANY;
+      $wr                  =  $viz_dmem_wr_en && ($viz_dmem_wr_index == #dmem);
+      $value[_width-1:0]   =  $viz_dmem_reset    ?     #dmem                :
+                              >>1$wr             ?     >>1$viz_dmem_wr_data :
+                                                       $RETAIN;
+   
+   $$_port2_data[_width-1:0] = /top/dmem_viz<>0$viz_dmem_rd_en ? /dmem[/top/dmem_viz<>0$viz_dmem_rd_index]$value : 'X;
+   '])
 
 \TLV cpu_viz()
    m4_ifelse_block(m4_sp_graph_dangerous, 1, [''], ['
@@ -89,10 +83,7 @@ m4+definitions(['
       assign instr_strs = '{m4_asm_mem_expr "END                                     "};
    
    /cpuviz
-      $sticky_zero = 1'b0;
-      
       $fetch_instr_str[40*8-1:0] = *instr_strs\[/top$pc[\$clog2(M4_NUM_INSTRS+1)+1:2]\];
-      
       \viz_alpha
          initEach() {
             let imem_header = new fabric.Text("📒 Instr. Memory", {
@@ -102,21 +93,21 @@ m4+definitions(['
                   fontWeight: 800,
                   fontFamily: "monospace"
                })
-            let decode_header = new fabric.Text("💭 Instr. Decode", {
+            let decode_header = new fabric.Text("⚙️ Instr. Decode", {
                   top: 0,
                   left: 40,
                   fontSize: 18,
                   fontWeight: 800,
                   fontFamily: "monospace"
                })
-            let rf_header = new fabric.Text("🗃️ Reg. File", {
+            let rf_header = new fabric.Text("📂 Reg. File", {
                   top: -29 - 40,
                   left: 280,
                   fontSize: 18,
                   fontWeight: 800,
                   fontFamily: "monospace"
                })
-            let dmem_header = new fabric.Text("📂 Data Memory", {
+            let dmem_header = new fabric.Text("🗃️ Data Memory", {
                   top: -29 - 40,
                   left: 450,
                   fontSize: 18,
@@ -142,131 +133,107 @@ m4+definitions(['
             return {objects: {imem_header, decode_header, rf_header, dmem_header, error_header, error_box}};
          },
          renderEach: function() {
-            //debugger
+            debugger
             //
-            // PC instr_mem pointer
-            let pc            = this.svSigRef(`L0_pc_a0`);
-            let rd_valid      = this.svSigRef(`L0_rd_valid_a0`);
-            let rd            = this.svSigRef(`L0_rd_a0`);
-            let result        = this.svSigRef(`L0_result_a0`);
-            let src1_value    = this.svSigRef(`L0_src1_value_a0`);
-            let src2_value    = this.svSigRef(`L0_src2_value_a0`);
-            let imm           = this.svSigRef(`L0_imm_a0`);
-            let imm_valid     = this.svSigRef(`L0_imm_valid_a0`);
-            let rs1           = this.svSigRef(`L0_rs1_a0`);
-            let rs2           = this.svSigRef(`L0_rs2_a0`);
-            let rs1_valid     = this.svSigRef(`L0_rs1_valid_a0`);
-            let rs2_valid     = this.svSigRef(`L0_rs2_valid_a0`);
-            let valid         = this.svSigRef(`L0_valid_a0`);
-            let mnemonic      = this.svSigRef(`L0_mnemonic_a0`);
-            let rf_wr_data    = this.svSigRef(`L0_rf_wr_data_a0`);
-            
             var missing_list = "";
+            let sticky_zero = this.svSigRef(`sticky_zero`);
+            siggen = (name) => {
+               var sig = this.svSigRef(`L0_${name}_a0`)
+               if (sig == null) {
+                  missing_list += `◾ $${name}      \n`;
+                  sig         = sticky_zero;
+               }
+               return sig
+            }
             
-            if (examp   == null){
-               missing_list += "◾ $example    \n";
-               examp    = '$sticky_zero';
+            siggen_rf_dmem = (name, scope) => {
+               var sig = this.svSigRef(`${scope}_${name}_a0`)
+               if (sig == null) {
+                  sig         = sticky_zero;
+               }
+               return sig
             }
-            if (pc         == null){
-               missing_list += "◾ $pc         \n";
-               pc         = '$sticky_zero';
+            
+            siggen_mnemonic = () => {
+               instrs = ["lui", "auipc", "jal", "jalr", "beq", "bne", "blt", "bge", "bltu", "bgeu", "lb", "lh", "lw", "lbu", "lhu", "sb", "sh", "sw", "addi", "slti", "sltiu", "xori", "ori", "andi", "slli", "srli", "srai", "add", "sub", "sll", "slt", "sltu", "xor", "srl", "sra", "or", "and", "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci", "load", "store"];
+                  for(i=0;i<instrs.length;i++) {
+                     var sig = this.svSigRef(`L0_is_${instrs[i]}_a0`)
+                     if(sig != null) {
+                        if (sig.asBool()) {
+                           return instrs[i].toUpperCase()
+                        }
+                     }
+                  }
+                  return "ILLEGAL"
             }
-            if (rd_valid   == null){
-               missing_list += "◾ $rd_valid   \n";
-               rd_valid   = '$sticky_zero';
-            }
-            if (rd         == null){
-               missing_list += "◾ $rd         \n";
-               rd         = '$sticky_zero';
-            }
-            if (result     == null){
-               missing_list += "◾ $result     \n";
-               result     = '$sticky_zero';
-            }
-            if (src1_value == null){
-               missing_list += "◾ $src1_value \n";
-               src1_value = '$sticky_zero';
-            }
-            if (src2_value == null){
-               missing_list += "◾ $src2_value \n";
-               src2_value = '$sticky_zero';
-            }
-            if (imm        == null){
-               missing_list += "◾ $imm        \n";
-               imm        = '$sticky_zero';
-            }
-            if (imm_valid  == null){
-               missing_list += "◾ $imm_valid  \n";
-               imm_valid  = '$sticky_zero';
-            }
-            if (rs1        == null){
-               missing_list += "◾ $rs1        \n";
-               rs1        = '$sticky_zero';
-            }
-            if (rs2        == null){
-               missing_list += "◾ $rs2        \n";
-               rs2        = '$sticky_zero';
-            }
-            if (rs1_valid  == null){
-               missing_list += "◾ $rs1_valid  \n";
-               rs1_valid  = '$sticky_zero';
-            }
-            if (rs2_valid  == null){
-               missing_list += "◾ $rs2_valid  \n";
-               rs2_valid  = '$sticky_zero';
-            }
-            if (valid      == null){
-               missing_list += "◾ $valid      \n";
-               valid      = '$sticky_zero';
-            }
-            if (mnemonic   == null){
-               missing_list += "◾ $mnemonic   \n";
-               mnemonic   = '$sticky_zero';
-            }
-            if (rf_wr_data == null){
-               missing_list += "◾ $rf_wr_data \n";
-               rf_wr_data = '$sticky_zero';
-            }
+            
+            let example       =   siggen("error_eg")
+            let pc            =   siggen("pc");
+            let rd_valid      =   siggen("rd_valid");
+            let rd            =   siggen("rd");
+            let result        =   siggen("result");
+            let src1_value    =   siggen("src1_value");
+            let src2_value    =   siggen("src2_value");
+            let imm           =   siggen("imm");
+            let imm_valid     =   siggen("imm_valid");
+            let rs1           =   siggen("rs1");
+            let rs2           =   siggen("rs2");
+            let rs1_valid     =   siggen("rs1_valid");
+            let rs2_valid     =   siggen("rs2_valid");
+            let valid         =   siggen("valid");
+            let mnemonic      =   siggen_mnemonic();
+            
+            let rf_rd_en1     =   siggen_rf_dmem("viz_rf_rd_en1", "RfViz")   
+            let rf_rd_index1  =   siggen_rf_dmem("viz_rf_rd_index1", "RfViz")      
+            let rf_rd_en2     =   siggen_rf_dmem("viz_rf_rd_en2", "RfViz")   
+            let rf_rd_index2  =   siggen_rf_dmem("viz_rf_rd_index2", "RfViz")      
+            let rf_wr_en      =   siggen_rf_dmem("viz_rf_wr_en", "RfViz")  
+            let rf_wr_index   =   siggen_rf_dmem("viz_rf_wr_index", "RfViz")     
+            let rf_wr_data    =   siggen_rf_dmem("viz_rf_wr_data", "RfViz")
+            let dmem_rd_en    =   siggen_rf_dmem("viz_dmem_rd_en", "DmemViz")    
+            let dmem_rd_index =   siggen_rf_dmem("viz_dmem_rd_index", "DmemViz")       
+            let dmem_wr_en    =   siggen_rf_dmem("viz_dmem_wr_en", "DmemViz")    
+            let dmem_wr_index =   siggen_rf_dmem("viz_dmem_wr_index", "DmemViz")       
             
             let color = !(valid.asBool()) ? "gray" :
                                             "blue";
             
-            let pcPointer = new fabric.Text("->", {
-               top: 18 * (pc.asInt() / 4),
+            let pcPointer = new fabric.Text("👉", {
+               top: 18 * (pc.asInt() >> 2),
                left: -295,
                fill: color,
                fontSize: 14,
                fontFamily: "monospace"
             })
-            let pc_arrow = new fabric.Line([23, 18 * (pc.asInt() / 4) + 6, 46, 35], {
+            let pc_arrow = new fabric.Line([23, 18 * (pc.asInt() >> 2) + 6, 46, 35], {
                stroke: "#d0e8ff",
                strokeWidth: 2
             })
             
-            let rs1_arrow = new fabric.Line([330, 18 * '$rf_rd_index1'.asInt() + 6 - 40, 190, 75 + 18 * 2], {
+            let rs1_arrow = new fabric.Line([330, 18 * rf_rd_index1.asInt() + 6 - 40, 190, 75 + 18 * 2], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '$rf_rd_en1'.asBool()
+               visible: rf_rd_en1.asBool()
             })
-            let rs2_arrow = new fabric.Line([330, 18 * '$rf_rd_index2'.asInt() + 6 - 40, 190, 75 + 18 * 3], {
+            let rs2_arrow = new fabric.Line([330, 18 * rf_rd_index2.asInt() + 6 - 40, 190, 75 + 18 * 3], {
                stroke: "#d0e8ff",
                strokeWidth: 2,
-               visible: '$rf_rd_en2'.asBool()
+               visible: rf_rd_en2.asBool()
             })
-            let rd_arrow = new fabric.Line([330, 18 * '$rf_wr_index'.asInt() + 6 - 40, 168, 75 + 18 * 0], {
+            let rd_arrow = new fabric.Line([310, 18 * rf_wr_index.asInt() + 6 - 40, 168, 75 + 18 * 0], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '$rf_wr_en'.asBool()
+               visible: rf_wr_en.asBool()
             })
-            let ld_arrow = new fabric.Line([470, 18 * '$dmem_rd_index'.asInt() + 6 - 40, 370, 18 * '$rf_wr_index'.asInt() + 6 - 40], {
+            let ld_arrow = new fabric.Line([470, 18 * dmem_rd_index.asInt() + 6 - 40, 175, 75 + 18 * 1], {
+               stroke: "#d0e8ff",
+               strokeWidth: 2,
+               visible: dmem_rd_en.asBool()
+            })
+            let st_arrow = new fabric.Line([470, 18 * dmem_wr_index.asInt() + 6 - 40, 175, 75 + 18 * 1], {
                stroke: "#d0d0ff",
                strokeWidth: 3,
-               visible: '$dmem_rd_en'.asBool()
-            })
-            let st_arrow = new fabric.Line([470, 18 * '$dmem_wr_index'.asInt() + 6 - 40, 370, 18 * '$rf_rd_index2'.asInt() + 6 - 40], {
-               stroke: "#d0d0ff",
-               strokeWidth: 3,
-               visible: '$dmem_wr_en'.asBool()
+               visible: dmem_wr_en.asBool()
             })
             //
             // Fetch Instruction
@@ -282,10 +249,12 @@ m4+definitions(['
             //
             // Instruction with values.
             //
+            
             let regStr = (valid, regNum, regValue) => {
                return valid ? `r${regNum}` : `rX`  // valid ? `r${regNum} (${regValue})` : `rX`
             };
             let immStr = (valid, immValue) => {
+               immValue = parseInt(immValue,2) + 2*(immValue[0] << 31)
                return valid ? `i[${immValue}]` : ``;
             };
             let srcStr = ($src, $valid, $reg, $value) => {
@@ -293,10 +262,9 @@ m4+definitions(['
                           ? `\n      ${regStr(true, $reg.asInt(NaN), $value.asInt(NaN))}`
                           : "";
             };
-            
             let str = `${regStr(rd_valid.asBool(false), rd.asInt(NaN), result.asInt(NaN))}\n` +
-                      `  = ${mnemonic.asString()}${srcStr(1, rs1_valid, rs1, src1_value)}${srcStr(2, rs2_valid, rs2, src2_value)}\n` +
-                      `      ${immStr(imm_valid.asBool(false), imm.asInt(NaN))}`;
+                      `  = ${mnemonic}${srcStr(1, rs1_valid, rs1, src1_value)}${srcStr(2, rs2_valid, rs2, src2_value)}\n` +
+                      `      ${immStr(imm_valid.asBool(false), imm.asBinaryStr())}`;
             let instrWithValues = new fabric.Text(str, {
                top: 70,
                left: 65,
@@ -307,7 +275,7 @@ m4+definitions(['
             // Animate fetch (and provide onChange behavior for other animation).
             
             let fetch_instr_viz = new fabric.Text('$fetch_instr_str'.asString(), {
-               top: 18 * (pc.asInt() / 4),
+               top: 18 * (pc.asInt() >> 2),
                left: -272,
                fill: "blue",
                fontSize: 14,
@@ -347,36 +315,43 @@ m4+definitions(['
             
             let load_viz = new fabric.Text(rf_wr_data.asInt(0).toString(), {
                left: 470,
-               top: 18 * '$dmem_rd_index'.asInt() + 6 - 40,
+               top: 18 * dmem_rd_index.asInt() + 6 - 40,
                fill: "blue",
                fontSize: 14,
                fontFamily: "monospace",
                fontWeight: 1000,
                visible: false
             })
-            if ('$dmem_rd_en'.asBool()) {
+            if (dmem_rd_en.asBool()) {
                setTimeout(() => {
                   load_viz.setVisible(true)
-                  load_viz.animate({left: 350, top: 18 * '$rf_wr_index'.asInt() - 40}, {
+                  load_viz.animate({left: 165, top: 75 + 18 * 1 - 5}, {
                     onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                     duration: 500
                   })
-               }, 1000)
+                  setTimeout(() => {
+                     load_viz.setVisible(true)
+                     load_viz.animate({left: 350, top: 18 * rf_wr_index.asInt() - 40}, {
+                       onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                       duration: 500
+                     })
+                     }, 1000)
+               }, 500)
             }
             
             let store_viz = new fabric.Text(src2_value.asInt(0).toString(), {
-               left: 350,
-               top: 18 * '$rf_rd_index2'.asInt() - 40,
+               left: 165,
+               top: 75 + 18 * 1 - 5,
                fill: "blue",
                fontSize: 14,
                fontFamily: "monospace",
                fontWeight: 1000,
                visible: false
             })
-            if ('$dmem_wr_en'.asBool()) {
+            if (dmem_wr_en.asBool()) {
                setTimeout(() => {
                   store_viz.setVisible(true)
-                  store_viz.animate({left: 510, top: 18 * '$dmem_wr_index'.asInt() - 40}, {
+                  store_viz.animate({left: 515, top: 18 * dmem_wr_index.asInt() - 40}, {
                     onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                     duration: 500
                   })
@@ -401,7 +376,7 @@ m4+definitions(['
                fontWeight: 800,
                visible: false
             })
-            if (rd_valid.asBool() && !'$dmem_rd_en'.asBool()) {
+            if (rd_valid.asBool() && !dmem_rd_en.asBool()) {
                setTimeout(() => {
                   result_viz.setVisible(true)
                   result_shadow.setVisible(true)
@@ -425,7 +400,6 @@ m4+definitions(['
          }
       
       /imem[m4_eval(M4_NUM_INSTRS-1):0]  // TODO: Cleanly report non-integer ranges.
-         $rd_viz = !/top$reset && /top$pc[4:2] == #imem;
          $instr[31:0] = *instrs\[#imem\];
          $instr_str[40*8-1:0] = *instr_strs[imem];
          \viz_alpha
@@ -446,6 +420,9 @@ m4+definitions(['
             },
             renderEach: function() {
                // Instruction memory is constant, so just create it once.
+               let reset = this.svSigRef(`L0_reset_a0`);
+               let pc = this.svSigRef(`L0_pc_a0`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`L0_pc_a0`);
+               let rd_viz = !reset.asBool() && (pc.asInt() >> 2) == this.getIndex();
                if (!global.instr_mem_drawn) {
                   global.instr_mem_drawn = [];
                }
@@ -458,31 +435,40 @@ m4+definitions(['
                   this.getInitObject("binary").setText(binary_str)
                   this.getInitObject("disassembled").setText(disassembled_str)
                }
-               this.getInitObject("disassembled").set({textBackgroundColor: '$rd_viz'.asBool() ? "#b0ffff" : "white"})
+               this.getInitObject("disassembled").set({textBackgroundColor: rd_viz ? "#b0ffff" : "white"})
             }
       
       /xreg[31:0]
-         $ANY = /top/xreg<>0$ANY;
-         $rd = (/cpuviz$rf_rd_en1 && /cpuviz$rf_rd_index1 == #xreg) ||
-               (/cpuviz$rf_rd_en2 && /cpuviz$rf_rd_index2 == #xreg);
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               let rd = '$rd'.asBool(false);
-               let mod = '$wr'.asBool(false);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`${name}`);
+               let rf_rd_en1 = siggen(`RfViz_viz_rf_rd_en1_a0`);
+               let rf_rd_index1 = siggen(`RfViz_viz_rf_rd_index1_a0`);
+               let rf_rd_en2 = siggen(`RfViz_viz_rf_rd_en1_a0`);
+               let rf_rd_index2 = siggen(`RfViz_viz_rf_rd_index2_a0`);
+               let rf_wr_index = siggen(`RfViz_viz_rf_wr_index_a0`);
+               let wr = siggen(`L1_Xreg[${this.getIndex()}].L1_wr_a0`);
+               let value = siggen(`Xreg_value_a0(${this.getIndex()})`);
+               
+               let rd = (rf_rd_en1.asBool(false) && rf_rd_index1.asInt() == this.getIndex()) || 
+                        (rf_rd_en2.asBool(false) && rf_rd_index2.asInt() == this.getIndex());
+               
+               let mod = wr.asBool(false);
+               let wr_color = mod && rf_wr_index.asInt() == this.getIndex();
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
-               let newValStr = regIdent + ": " + (mod ? '$value'.asInt(NaN).toString() : "");
-               let reg_str = new fabric.Text(regIdent + ": " + '>>1$value'.asInt(NaN).toString(), {
+               let newValStr = regIdent + ": ";
+               let reg_str = new fabric.Text(regIdent + ": " + value.asInt(NaN).toString(), {
                   top: 18 * this.getIndex() - 40,
                   left: 316,
                   fontSize: 14,
                   fill: mod ? "blue" : "black",
-                  fontWeight: mod ? 1000 : 400,
+                  fontWeight: mod ? 800 : 400,
                   fontFamily: "monospace",
-                  textBackgroundColor: rd ? "#b0ffff" : null
+                  textBackgroundColor: rd ? "#b0ffff" : wr_color ? "#ffef87" : null
                })
                if (mod) {
                   setTimeout(() => {
@@ -495,26 +481,34 @@ m4+definitions(['
             }
          
       /dmem[31:0]
-         $ANY = /top/dmem<>0$ANY;
-         $rd = (/cpuviz$dmem_rd_en && /cpuviz$dmem_rd_index == #dmem);
          \viz_alpha
             initEach: function() {
                return {}  // {objects: {reg: reg}};
             },
             renderEach: function() {
-               let rd = '$rd'.asBool(false);
-               let mod = '$wr'.asBool(false);
+               siggen = (name) => this.svSigRef(`${name}`) == null ? this.svSigRef(`sticky_zero`) : this.svSigRef(`${name}`);
+               
+               let dmem_rd_en = siggen(`DmemViz_viz_dmem_rd_en_a0`);
+               let dmem_rd_index = siggen(`DmemViz_viz_dmem_rd_index_a0`);
+               let dmem_wr_index = siggen(`DmemViz_viz_dmem_wr_index_a0`);
+               
+               let wr = siggen(`L1_Dmem[${this.getIndex()}].L1_wr_a0`);
+               let value = siggen(`Dmem_value_a0(${this.getIndex()})`);
+               
+               let rd = dmem_rd_en.asBool() && dmem_rd_index.asInt() == this.getIndex();
+               let mod = wr.asBool(false);
+               let wr_color = mod && dmem_wr_index.asInt() == this.getIndex();
                let reg = parseInt(this.getIndex());
                let regIdent = reg.toString().padEnd(2, " ");
-               let newValStr = regIdent + ": " + (mod ? '$value'.asInt(NaN).toString() : "");
-               let dmem_str = new fabric.Text(regIdent + ": " + '>>1$value'.asInt(NaN).toString(), {
+               let newValStr = regIdent + ": ";
+               let dmem_str = new fabric.Text(regIdent + ": " + value.asInt(NaN).toString(), {
                   top: 18 * this.getIndex() - 40,
                   left: 480,
                   fontSize: 14,
                   fill: mod ? "blue" : "black",
-                  fontWeight: mod ? 1000 : 400,
+                  fontWeight: mod ? 800 : 400,
                   fontFamily: "monospace",
-                  textBackgroundColor: rd ? "#b0ffff" : null
+                  textBackgroundColor: rd ? "#b0ffff" : wr_color ? "#ffef87" : null
                })
                if (mod) {
                   setTimeout(() => {
@@ -528,11 +522,9 @@ m4+definitions(['
    '])
 
 
-
-
 \SV
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
-                   
+   m4_makerchip_module  // (Expanded in Nav-TLV pane.)
+   
 \TLV
 
    // /====================\
@@ -564,7 +556,7 @@ m4+definitions(['
    m4_asm(SW, r6, r1, 0)
    m4_asm(LW, r4, r6, 0)
    // Optional:
-   m4_asm(JAL, r7, 11111111111111100100) // Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
+   m4_asm(JAL, r7, 11111111111111101000) // Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
    
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
    m4+fill_imem()
@@ -580,8 +572,8 @@ m4+definitions(['
                      $pc + 32'd4 ;
    $pc[31:0] = >>1$next_pc;
    
-      //2 - IMEM - Read
-      //@1
+   //2 - IMEM - Read
+   //@1
    `READONLY_MEM($pc, $$instr[31:0])
 
    //3 - Decode Logic - RISBUJ
@@ -655,9 +647,9 @@ m4+definitions(['
    //$result[31:0] =   $is_addi ?  $src1_value + $imm :
    //                  $is_add  ?  $src1_value + $src2_value :
    //                              32'bx;
-   $rf_wr_en            =     $rd_valid && ($rd != 5'b0);
+   //$rf_wr_en            =     $rd_valid && ($rd != 5'b0);
    //$rf_wr_index[4:0]    =     $rd;
-   $rf_wr_data[31:0]    =     $is_load ? $ld_data : $resulto; // 14
+   //$rf_wr_data[31:0]    =     $is_load ? $ld_data : $result; // 14
 
    //9- Branch
    $taken_br   =  $is_beq  ?  ($src1_value == $src2_value) :
@@ -688,7 +680,7 @@ m4+definitions(['
    $is_slti    =  $dec_bits ==? 11'bx_010_0010011 ;
 
    //12
-   $resulto[31:0]  =     $is_addi || $is_load || $is_s_instr ?  $src1_value + $imm : // 14
+   $result[31:0]  =     $is_addi || $is_load || $is_s_instr ?  $src1_value + $imm : // 14
                         $is_add     ?  $src1_value + $src2_value :
                         $is_lui     ?  {$imm[31:12], 12'b0} :
                         $is_auipc   ?  $pc + $imm :
@@ -699,7 +691,6 @@ m4+definitions(['
    //13
    $is_jump             =  $is_jal || $is_jalr;
    $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
-   $valid = 1'b1;
    
 
    //14
@@ -729,8 +720,9 @@ m4+definitions(['
    //  o data memory
    //  o CPU visualization
    //|cpu
-   m4+rf(32, 32, $reset, W, $rf_wr_en, $rd, $rf_wr_data, R, $rs1_valid, $rs1, $$src1_value[31:0], R, $rs2_valid, $rs2, $$src2_value[31:0])
-   m4+dmem(32, 32, $reset, W, $is_s_instr, $resulto[6:2], $src2_value, R, $is_load, $resulto[6:2], $$ld_data[31:0])
+   m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $is_load ? $ld_data : $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   //m4+rf(32, 32, $reset, $rd_valid && ($rd != 5'b0), $rd, $result, $rs1_valid, $rs1, $$src1_value[31:0], $rs2_valid, $rs2, $$src2_value[31:0])
+   m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $$ld_data[31:0])
    
    m4+cpu_viz()    // For visualisation, argument should be at least equal to the last stage of CPU logic
                        // @4 would work for all labs
