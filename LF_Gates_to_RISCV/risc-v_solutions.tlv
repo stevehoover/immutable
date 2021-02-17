@@ -75,6 +75,8 @@ m4+definitions(['
    $rs2_valid     =  $is_r_instr || $is_s_instr || $is_b_instr ;
    $rd_valid      =  $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
    $imm_valid     =  $is_i_instr || $is_s_instr || $is_b_instr || $is_u_instr || $is_j_instr;
+   `BOGUS_USE($funct7 $funct7_valid $funct3 $funct3_valid $rs1 $rs1_valid $rs2
+              $rs2_valid $rd $rd_valid $imm_valid $opcode)
    '])
    
    m4_ifelse_block(m4_reached(['IMM']), ['
@@ -97,6 +99,7 @@ m4+definitions(['
    
    $is_addi          =  $dec_bits ==? 11'bx_000_0010011;
    $is_add           =  $dec_bits ==? 11'b0_000_0110011;
+   `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
    '])
    
    m4_ifelse_block(m4_reached(['RF_WRITE']), ['
@@ -224,6 +227,6 @@ m4+definitions(['
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+hidden_solution(DONE)   // Slide number of model to build.
+   m4+hidden_solution(SUBSET_INSTRS)   // Slide number of model to build.
 \SV
    endmodule
