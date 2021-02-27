@@ -103,7 +103,7 @@ m4+definitions(['
    '])
    
    m4_ifelse_block(m4_reached(['RF_WRITE']), ['
-   m4_define(['m4_rf_wr_en'],    ['$rd_valid'])
+   m4_define(['m4_rf_wr_en'],    ['$rd_valid && ($rd != 5'b0)'])
    m4_define(['m4_rf_wr_index'], ['$rd'])
    m4_define(['m4_rf_wr_data'],  ['$result'])
    '], ['
@@ -145,7 +145,6 @@ m4+definitions(['
                      $is_load || $is_s_instr ?  $src1_value + $imm :
                      '])
                                   32'b0;
-   m4_define(['m4_rf_wr_en'], ['$rd_valid && ($rd != 5'b0)'])
    '])
    
    
@@ -157,7 +156,9 @@ m4+definitions(['
                   $is_bltu ?  ($src1_value < $src2_value)  :
                   $is_bgeu ?  ($src1_value >= $src2_value) :
                               1'b0;
-   
+   '])
+
+   m4_ifelse_block(m4_reached(['BR_REDIR']), ['
    $br_tgt_pc[31:0]  =  $pc + $imm;
    '])
       
