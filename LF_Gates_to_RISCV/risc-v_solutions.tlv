@@ -19,7 +19,6 @@ m4+definitions(['
    m4_define(['M4_LAB'], ['M4_']['_lab']['_LAB'])
    
    
-   m4_ifelse(m4_reached(['TEST_PROG']), ['m4_define(['M4_VIZ_BASE'], 16)'])   // (Note that immediate values are shown in disassembled instructions in binary and signed decimal in decoder regardless of this setting.)
    m4_define(['m4_prog_macro'], m4_ifelse(m4_reached(['TEST_PROG']), ['test_prog'], ['sum_prog']))
    m4+m4_prog_macro()
    
@@ -218,11 +217,11 @@ m4+definitions(['
    m4+rf(32, 32, $reset, $wr_en, $wr_index, $wr_data, $rd1_en, $rd1_index, $rd1_data, $rd2_en, $rd2_index, $rd2_data)
    '])
    m4_ifelse_block(m4_reached(['DMEM']), ['
-   m4+dmem(32, 32, $reset, $is_s_instr, $result[6:2], $src2_value, $is_load, $result[6:2], $ld_data)
+   m4+dmem(32, 32, $reset, $result[6:2], $is_s_instr, $src2_value, $is_load, $ld_data)
    '])
    
-   //m4+rf(32, 32, $reset, $wr_en, $wr_index, $wr_data, $rd1_en, $rd1_index, $rd1_data, $rd2_en, $rd2_index, $rd2_data)
-   //m4+dmem(32, 32, $reset, $wr_en, $wr_addr, $wr_data, $rd_en, $rd_addr, $wr_data)
+   //m4+rf(32, 32, $reset, $wr_en, $wr_index[4:0], $wr_data[31:0], $rd1_en, $rd1_index[4:0], $rd1_data, $rd2_en, $rd2_index[4:0], $rd2_data)
+   //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
    m4+cpu_viz()
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
