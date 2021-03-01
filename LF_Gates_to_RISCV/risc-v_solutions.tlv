@@ -16,6 +16,7 @@ m4+definitions(['
 '])
 
 \TLV hidden_solution(_lab)
+   /* verilator lint_on WIDTH */
    m4_define(['M4_LAB'], ['M4_']['_lab']['_LAB'])
    
    
@@ -111,8 +112,16 @@ m4+definitions(['
    m4_define(['m4_rf_wr_data'],  ['$rf_wr_data'])
    '])
    m4_ifelse_block(m4_reached(['FULL_ALU']), ['
-   $sltu_rslt  = $src1_value < $src2_value;
-   $sltiu_rslt = $src1_value < $imm;
+   // SLTU and SLTI (set if less than, unsigned) results:
+   $sltu_rslt[31:0]  = {31'b0, $src1_value < $src2_value};
+   $sltiu_rslt[31:0] = {31'b0, $src1_value < $imm};
+   
+   // SRA and SRAI (shift right, arithmetic) results:
+   //   64-bit sign-extended src1
+   $sext_src1[63:0] = { {32{$src1_value[31]}}, $src1_value };
+   //   64-bit sign-extended results, to be truncated
+   $sra_rslt[63:0] = $sext_src1 >> $src2_value[4:0];
+   $srai_rslt[63:0] = $sext_src1 >> $imm[4:0];
    '])
    m4_ifelse_block(m4_reached(['SUBSET_ALU']), ['
    $result[31:0] =   $is_addi  ?  $src1_value + $imm :
@@ -135,10 +144,14 @@ m4+definitions(['
                      $is_auipc   ?  $pc + $imm :
                      $is_jal     ?  $pc + 32'd4 :
                      $is_jalr    ?  $pc + 32'd4 :
-                     $is_srai    ?  {{32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
-                     $is_slt     ?  (($src1_value[31] == $src2_value[31]) ? $sltu_rslt  : {31'b0, $src1_value[31]}) :
-                     $is_slti    ?  (($src1_value[31] == $imm[31])        ? $sltiu_rslt : {31'b0, $src1_value[31]}) :
-                     $is_sra     ?  {{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] :
+                     $is_slt   ?  ( ($src1_value[31] == $src2_value[31]) ?
+                                        $sltu_rslt :
+                                        {31'b0, $src1_value[31]} )          :
+                     $is_slti  ?  ( ($src1_value[31] == $imm[31]) ?
+                                        $sltiu_rslt :
+                                        {31'b0, $src1_value[31]} )          :
+                     $is_sra   ?  $sra_rslt[31:0]                           :
+                     $is_srai  ?  $srai_rslt[31:0]                          :
                      '])
                      m4_ifelse_block(m4_reached(['LD_ST_ADDR']), ['
                      $is_load || $is_s_instr ?  $src1_value + $imm :
@@ -227,6 +240,6 @@ m4+definitions(['
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+hidden_solution(SUBSET_INSTRS)   // Slide number of model to build.
+   m4+hidden_solution(DONE)   // Slide number of model to build.
 \SV
    endmodule
