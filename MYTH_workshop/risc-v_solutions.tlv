@@ -182,8 +182,8 @@ m4+definitions(['
       '])
 
       m4_lab(2, ['Complete Instruction Decode
-      m4_define(['m4_decode_stage'], @2)
-      @2
+      m4_define(['m4_decode_stage'], @1)
+      @1
          $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
          $is_auipc   =  $dec_bits ==? 11'bx_xxx_0010111 ;
          $is_jal     =  $dec_bits ==? 11'bx_xxx_1101111 ;
