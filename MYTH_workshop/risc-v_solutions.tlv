@@ -313,9 +313,10 @@ m4+definitions(['
       '])
       
       m4_ifelse_block(m4_fetch_enable, 1, ['
-      @1
+      @0
          $imem_rd_en                          = !$reset;
          $imem_rd_addr[M4_IMEM_INDEX_CNT-1:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
+      @1
          $instr[31:0]                         = $imem_rd_data[31:0];
          `BOGUS_USE($instr)
       '])
