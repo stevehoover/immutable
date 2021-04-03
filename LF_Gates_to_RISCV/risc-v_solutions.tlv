@@ -108,8 +108,8 @@ m4+definitions(['
    m4_define(['m4_rf_wr_data'],  ['$result'])
    '], ['
    m4_define(['m4_rf_wr_en'],    ['$rf_wr_en'])
-   m4_define(['m4_rf_wr_index'], ['$rf_wr_index'])
-   m4_define(['m4_rf_wr_data'],  ['$rf_wr_data'])
+   m4_define(['m4_rf_wr_index'], ['$rf_wr_index[4:0]'])
+   m4_define(['m4_rf_wr_data'],  ['$rf_wr_data[31:0]'])
    '])
    m4_ifelse_block(m4_reached(['FULL_ALU']), ['
    // SLTU and SLTI (set if less than, unsigned) results:
