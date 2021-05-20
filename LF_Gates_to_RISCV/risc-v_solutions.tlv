@@ -62,20 +62,18 @@ m4+definitions(['
    '])
    
    m4_ifelse_block(m4_reached(['FIELDS']), ['
-   $funct7[6:0]   =  $instr[31:25];
    $funct3[2:0]   =  $instr[14:12];
    $rs1[4:0]      =  $instr[19:15];
    $rs2[4:0]      =  $instr[24:20];
    $rd[4:0]       =  $instr[11:7];
    $opcode[6:0]   =  $instr[6:0];
    
-   $funct7_valid  =  $is_r_instr;
    $funct3_valid  =  $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
    $rs1_valid     =  $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
    $rs2_valid     =  $is_r_instr || $is_s_instr || $is_b_instr ;
    $rd_valid      =  $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
    $imm_valid     =  $is_i_instr || $is_s_instr || $is_b_instr || $is_u_instr || $is_j_instr;
-   `BOGUS_USE($funct7 $funct7_valid $funct3 $funct3_valid $rs1 $rs1_valid $rs2
+   `BOGUS_USE($funct3 $funct3_valid $rs1 $rs1_valid $rs2
               $rs2_valid $rd $rd_valid $imm_valid $opcode)
    '])
    
