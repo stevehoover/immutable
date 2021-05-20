@@ -89,7 +89,7 @@ m4+definitions(['
    '])
    
    m4_ifelse_block(m4_reached(['SUBSET_INSTRS']), ['
-   $dec_bits[10:0]   =  {$funct7[5], $funct3, $opcode};
+   $dec_bits[10:0]   =  {$instr[30], $funct3, $opcode};
    $is_beq           =  $dec_bits ==? 11'bx_000_1100011;
    $is_bne           =  $dec_bits ==? 11'bx_001_1100011;
    $is_blt           =  $dec_bits ==? 11'bx_100_1100011;
