@@ -4,6 +4,7 @@
 
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/risc-v_solutions.tlv'])
 \TLV
+   m4_define(['M4_FMT_NO_SOURCE'], 1)   // TODO: This is a temporary fix
    // For RISC-V solutions, comment the line below.
    m4_define(['M4_CALCULATOR'], 1)
    // Provide a slide number for the lab.
