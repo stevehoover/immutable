@@ -252,13 +252,13 @@ m4+definitions(['
       m4+dmem(@4)
       '])
 
-      m4_lab(1, ['Load/Store in Program
+   m4_lab(1, ['Load/Store in Program
    m4_asm(SW, r0, r10, 100)             // Add SW , LW instructions to check dmem implementation
    m4_asm(LW, r15, r0, 100)
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
    |cpu
       m4_define(['m4_tb_style'], 2)
-      '])
+   '])
 
       m4_lab(1, ['Jumps
       m4_define(['m4_valid_style'], 4)
@@ -523,7 +523,8 @@ m4+definitions(['
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+main(1000)   // Slide number of model to build.
+   m4+hidden_solution(1000)   // Slide number of model to build.
+   m4+cpu_viz(@4)   // The visualization, configured to reflect the given pipeline stage.
 \SV
    endmodule
    

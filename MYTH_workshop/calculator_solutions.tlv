@@ -28,10 +28,10 @@ m4+definitions(['
       m4_lab(12, ['Counter and Calculator in Pipeline
       m4_define(['m4_lab_8'], 1)
       '])
-      m4_lab(1, ['Cycle Calculator
+      m4_lab(1, ['2-Cycle Calculator
       m4_define(['m4_lab_9'], 1)
       '])
-      m4_lab(5, ['Cycle Calculator with Validity
+      m4_lab(5, ['2-Cycle Calculator with Validity
       m4_define(['m4_lab_10'], 1)
       '])
       m4_lab(2, ['Calculator with Single-Value Memory
@@ -122,6 +122,6 @@ m4+definitions(['
 \SV_plus
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
 \TLV
-   m4+main(1000)   // Slide number of model to build.
+   m4+hidden_solution(34)   // Slide number of model to build.
 \SV_plus
    endmodule
