@@ -160,7 +160,7 @@ m4+definitions(['
       m4_define(['m4_pc_style'], 3)
       @1
          $inc_pc[31:0] = $pc + 32'd4;
-      @3
+      @m4_ifelse(m4_slide_cnt, m4_slide, 1, 3)
          $valid_taken_br = $valid && $taken_br;
       '])
 
@@ -264,11 +264,9 @@ m4+definitions(['
       m4_define(['m4_valid_style'], 4)
       m4_define(['m4_pc_style'], 6)
 
-      m4_tgt_stage
-         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
-
       @3
          $is_jump    =  $is_jal || $is_jalr;
+         $jalr_tgt_pc[31:0]   =  $src1_value + $imm;
          $valid_jump =  $is_jump && $valid;
       '])
 
