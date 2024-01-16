@@ -213,6 +213,11 @@
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = *top.cyc_cnt > 40;
    *failed = 1'b0;
+   
+   // Connect Tiny Tapeout outputs.
+   *uo_out = {6'b0, *failed, *passed};
+   *uio_out = 8'b0;
+   *uio_oe = 8'b0;
 
 \TLV cpu_solution()
    m5_cpu_defines()
