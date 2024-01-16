@@ -4,7 +4,7 @@
    
    nullify(m4_include_lib(https:/['']/raw.githubusercontent.com/stevehoover/MEST_Course/main/tlv_lib/m5_if(m5_CalcLab, calculator_shell_lib.tlv, risc-v_shell_lib.tlv)))
 
-\m5
+   
    /Define labs.
    var(LabCnt, 0)
    fn(define_labs, LabId, ..., {
@@ -17,24 +17,35 @@
    })
 
    fn(lab_num, LabId, {
-      ~get(lab_\m5_LabId['']_num)
+      ~if_var_def(lab_\m5_LabId['']_num, {
+         ~get(lab_\m5_LabId['']_num)
+      }, {
+         errprint_nl(Lab ID "m5_LabId" not defined.)
+         ~(0)
+      })
    })
 
    /Provide code introduced by given LabId, included if lab has been reached.
    fn(lab, LabId, Code, {
-      ~eval(m4_ifelse_block(m5_calc(m5_lab_num(m5_LabId) <= m5_Lab), 1, {
-         ~(// Lab m5_LabId: )
-         ~on_return(eval, m5_Code)
-      }))
-   })
-
-   fn(calc_defines, {
-      DEBUG(calc_defines)
-      define_labs(C-SEQ, C-PIPE, C-2CYC, C-VALID, C-MEM, C-MEM2)
+      ~eval(['m4_ifelse_block(m5_calc(m5_lab_num(m5_LabId) <= m5_Lab), 1, {
+         ~(['// Lab m5_LabId: '])
+         on_return(eval, m5_Code)
+      })'])
    })
 
    fn(reached, LabId, {
       ~calc(m5_Lab >= m5_lab_num(m5_LabId))
+   })
+
+   /Define m5_Lab.
+   fn(define_lab, {
+      universal_var(Lab, m5_lab_num(m5_LabId))
+   })
+   
+   fn(calc_defines, {
+      DEBUG(calc_defines)
+      define_labs(C-SEQ, C-PIPE, C-2CYC, C-VALID, C-MEM, C-MEM2)
+      define_lab()
    })
 
    fn(cpu_defines, {
@@ -42,6 +53,7 @@
 
       define_labs(PC, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
                   TB, 3CYC_VALID, 3CYC1, 3CYC2, RF_BYPASS, BR_VALID, ALL_INSTR, FULL_ALU, PRAGMAS, LD_REDIR, LD_DATA, DMEM, LD_ST_TB, DONE)
+      define_lab()
    
       TLV_fn(riscv_sum_prog, {
          var(Prog, ['
@@ -92,8 +104,8 @@
 
 \TLV calc_solution()
    m5_calc_defines()
-   m5_universal_var(Lab, m5_lab_num(m5_LabId))
 
+   /* verilator lint_off WIDTH */
    |calc
    
       // ============================================================================================================
@@ -204,7 +216,6 @@
 
 \TLV cpu_solution()
    m5_cpu_defines()
-   m5_universal_var(Lab, m5_lab_num(m5_LabId))
 
    m5+riscv_gen()
    m5+riscv_sum_prog()
