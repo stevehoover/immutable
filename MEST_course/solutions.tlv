@@ -17,20 +17,20 @@
    })
 
    fn(lab_num, LabId, {
-      ~if_var_def(lab_\m5_LabId['']_num, {
+      ~if_var_def(lab_\m5_LabId['']_num, [
          ~get(lab_\m5_LabId['']_num)
-      }, {
+      ], [
          errprint_nl(Lab ID "m5_LabId" not defined.)
          ~(0)
-      })
+      ])
    })
 
    /Provide code introduced by given LabId, included if lab has been reached.
    fn(lab, LabId, Code, {
-      ~eval(['m4_ifelse_block(m5_calc(m5_lab_num(m5_LabId) <= m5_Lab), 1, {
+      ~eval(['m4_ifelse_block(m5_calc(m5_lab_num(m5_LabId) <= m5_Lab), 1, [
          ~(['// Lab m5_LabId: '])
          on_return(eval, m5_Code)
-      })'])
+      ])'])
    })
 
    fn(reached, LabId, {
