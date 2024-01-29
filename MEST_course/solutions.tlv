@@ -4,6 +4,8 @@
    
    nullify(m4_include_lib(https:/['']/raw.githubusercontent.com/stevehoover/MEST_Course/main/tlv_lib/m5_if(m5_CalcLab, calculator_shell_lib.tlv, risc-v_shell_lib.tlv)))
 
+   universal_var(input_labels, ['"UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED"'])
+   universal_var(ui_in_expr, ['r[7:0]'])
    
    /Define labs.
    var(LabCnt, 0)
@@ -42,15 +44,34 @@
       universal_var(Lab, m5_lab_num(m5_LabId))
    })
    
-   fn(calc_defines, {
-      DEBUG(calc_defines)
-      define_labs(C-SEQ, C-PIPE, C-2CYC, C-VALID, C-MEM, C-MEM2)
+   if(m5_CalcLab, [
+      define_labs(C-SEQ, C-PIPE, C-IN, C-OUT, C-2CYC, C-VALID, C-MEM, C-EQUALS, C-TB, C-MEM2-DISABLED)
       define_lab()
-   })
-
-   fn(cpu_defines, {
-      DEBUG(cpu_defines)
-
+      set(input_labels, ['"Value[0]", "Value[1]", "Value[2]", "Value[3]", "Op[0]", "Op[1]", "Op[2]", "="'])
+      
+      if_eq(m5_LabId, C-OUT, [
+         set(ui_in_expr, ['8'b1'])
+      ])
+      
+      var(INPUT_STAGE, -1)
+      if(m5_reached(C-2CYC), [
+         var(INPUT_STAGE, 1)
+      ], m5_reached(C-PIPE), [
+         var(INPUT_STAGE, 1)
+      ], m5_reached(C-SEQ), [
+         var(INPUT_STAGE, 0)
+      ])
+      
+      var(OUTPUT_STAGE, -1)
+      if(m5_reached(C-2CYC), [
+         var(OUTPUT_STAGE, 2)
+      ], m5_reached(C-PIPE), [
+         var(OUTPUT_STAGE, 1)
+      ], m5_reached(C-SEQ), [
+         var(OUTPUT_STAGE, 0)
+      ])
+   ])
+   else([
       define_labs(PC, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
                   TB, 3CYC_VALID, 3CYC1, 3CYC2, RF_BYPASS, BR_VALID, ALL_INSTR, FULL_ALU, PRAGMAS, LD_REDIR, LD_DATA, DMEM, LD_ST_TB, DONE)
       define_lab()
@@ -96,71 +117,42 @@
 
          define_hier(IMEM, m5_NUM_INSTRS)
       })
-   })
+   ])
 
 
 \TLV hidden_solution()
    m5+call(m5_if(m5_CalcLab, calc_solution, cpu_solution))
 
 \TLV calc_solution()
-   m5_calc_defines()
-
    /* verilator lint_off WIDTH */
    |calc
    
       // ============================================================================================================
 
-      m5_var(lab_6, 0)
-      m5_lab(C-SEQ, ['Sequential Calculator
-      m5_set(lab_6, 1)
-      '])
-      m5_var(lab_8, 0)
-      m5_lab(C-PIPE, ['Counter and Calculator in Pipeline
-      m5_set(lab_8, 1)
-      '])
-      m5_var(lab_9, 0)
-      m5_lab(C-2CYC, ['2-Cycle Calculator
-      m5_set(lab_9, 1)
-      '])
-      m5_var(lab_10, 0)
-      m5_lab(C-VALID, ['2-Cycle Calculator with Validity
-      m5_set(lab_10, 1)
-      '])
-      m5_var(lab_11, 0)
-      m5_lab(C-MEM, ['Calculator with Single-Value Memory
-      m5_set(lab_11, 1)
-      '])
-      m5_var(lab_12, 0)
-      m5_lab(C-MEM2, ['Calculator with Memory
-      m5_set(lab_12, 1)
-      '])
-      
-      m5_var(INPUT_STAGE, -1)
-      m4_ifelse_block(m5_lab_9, 1, ['
-      m5_var(INPUT_STAGE, 1)'], m5_lab_8, 1, ['
-      m5_var(INPUT_STAGE, 1)'], m5_lab_6, 1, ['
-      m5_var(INPUT_STAGE, 0)'])
-      
-      m5_var(OUTPUT_STAGE, -1)
-      m4_ifelse_block(m5_lab_9, 1, ['
-      m5_var(OUTPUT_STAGE, 2)'], m5_lab_8, 1, ['
-      m5_var(OUTPUT_STAGE, 1)'], m5_lab_6, 1, ['
-      m5_var(OUTPUT_STAGE, 0)'])
       
       @0
          $reset = *reset;
+      m4_ifelse_block(m5_reached(C-IN), 1, ['
+      @0
+         // Board inputs
+         m5_if(m5_reached(C-MEM), ['$op[2:0] = *ui_in[6:4];'], ['$op[1:0] = *ui_in[5:4];'])
+         $val2[7:0] = {4'b0, *ui_in[3:0]};
+      '])
+      m4_ifelse_block(m5_reached(C-EQUALS), 1, ['
+         $equals_in = *ui_in[7];
+      '])
       @m5_INPUT_STAGE
-         m4_ifelse_block(m5_lab_6, 1, ['
+         m4_ifelse_block(m5_reached(C-SEQ), 1, ['
          //$reset = *reset;
-         $val1[31:0] = >>m5_calc(m5_OUTPUT_STAGE - m5_INPUT_STAGE + 1)$out;
-         $val2[31:0] = $rand2[3:0];
-         m4_ifelse_block(m5_lab_10, 1, ['
-         $valid = $reset ? 1'b0 : >>1$valid + 1'b1;
+         $val1[7:0] = >>m5_calc(m5_OUTPUT_STAGE - m5_INPUT_STAGE + 1)$out;
+         m5_if(m5_reached(C-IN), [''], ['$val2[31:0] = $rand2[3:0];'])
+         m4_ifelse_block(m5_reached(C-VALID), 1, ['
+         $valid = $reset ? 1'b0 : m5_if(m5_reached(C-EQUALS), ['$equals_in && ! >>1$equals_in'], ['>>1$valid + 1'b1']);
          $reset_or_valid = $valid || $reset;
          '])
          '])
 
-         m4_ifelse_block(m5_lab_12, 1, ['
+         m4_ifelse_block(m5_reached(C-MEM2-DISABLED), 1, ['
          /mem_array[7:0]
             $wr = (#mem_array == |calc$val1[2:0]) && (|calc$op[2:0] == 3'b101) && |calc$valid;
             $value[31:0] = |calc$reset ? 32'b0 :
@@ -169,59 +161,71 @@
          '])
 
       
-      m4_ifelse_block(m5_lab_10, 1, ['
+      m4_ifelse_block(m5_reached(C-VALID), 1, ['
       ?$reset_or_valid
          @m5_INPUT_STAGE
-            $sum[31:0] = $val1 + $val2;
-            $diff[31:0] = $val1 - $val2;
-            $prod[31:0] = $val1 * $val2;
-            $quot[31:0] = $val1 / $val2;
+            $sum[7:0] = $val1 + $val2;
+            $diff[7:0] = $val1 - $val2;
+            $prod[7:0] = $val1 * $val2;
+            $quot[7:0] = $val1 / $val2;
          @m5_OUTPUT_STAGE
-            m4_ifelse_block(m5_lab_11, 1, ['
-            $mem[31:0] = m5_if(m5_lab_12, [''], ['$reset           ? 32'b0 :'])
-                            ($op[2:0] == 3'b101) ? m5_if(m5_lab_12, ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
-                                               >>2$mem;
+            m4_ifelse_block(m5_reached(C-MEM), 1, ['
+            $mem[7:0] = $reset               ? 8'b0 :
+                        $valid && ($op[2:0] == 3'b101) ? m5_if(m5_reached(C-MEM2-DISABLED), ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
+                                               >>1$mem;
             '])
-            $out[31:0] = $reset           ? 32'b0 :
-                         (m5_if(m5_lab_11, ['$op == 3'b000'], m5_lab_10, ['$op[1:0] == 2'b00'])) ? $sum  :
-                         (m5_if(m5_lab_11, ['$op == 3'b001'], m5_lab_10, ['$op[1:0] == 2'b01'])) ? $diff :
-                         (m5_if(m5_lab_11, ['$op == 3'b010'], m5_lab_10, ['$op[1:0] == 2'b10'])) ? $prod :
-                         m5_if(m5_lab_11, ['($op == 3'b011) ? $quot :'], m5_lab_10, ['$quot;']) m4_ifelse_block(m5_lab_11, 1, ['
-                         ($op == 3'b100) ? >>2$mem : >>2$out;'])
-      '], m5_lab_6, 1, ['
+      '], m5_reached(C-SEQ), 1, ['
       @m5_INPUT_STAGE
-         $sum[31:0] = $val1 + $val2;
-         $diff[31:0] = $val1 - $val2;
-         $prod[31:0] = $val1 * $val2;
-         $quot[31:0] = $val1 / $val2;
-         m4_ifelse_block(m5_lab_10, 1, [''], m5_lab_9, 1, ['
+         $sum[7:0] = $val1 + $val2;
+         $diff[7:0] = $val1 - $val2;
+         $prod[7:0] = $val1 * $val2;
+         $quot[7:0] = $val1 / $val2;
+         m4_ifelse_block(m5_reached(C-VALID), 1, [''], m5_reached(C-2CYC), 1, ['
          $valid = $reset ? 1'b0 : >>1$valid + 1'b1;'])
-      @m5_OUTPUT_STAGE
-         $out[31:0] = m5_if(m5_lab_9, ['$reset || !$valid'], m5_lab_6, ['$reset']) ? 32'b0 :
-                        ($op[1:0] == 2'b00) ? $sum  :
-                        ($op[1:0] == 2'b01) ? $diff :
-                        ($op[1:0] == 2'b10) ? $prod :
-                                              $quot;
-         m4_ifelse_block(m5_lab_9, 1, [''], m5_lab_8, 1, ['
-         $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
+         m4_ifelse_block(m5_reached(C-2CYC), 1, [''], m5_reached(C-PIPE), 1, ['
+         $cnt[7:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
-   m4+cal_viz(@m5_OUTPUT_STAGE, /fpga)
+      @m5_OUTPUT_STAGE
+         $out[7:0] = m5_if(m5_reached(C-SEQ),  ['$reset ? 8'b0 :'])
+                     m5_if(m5_reached(C-2CYC), ['! $valid ? >>1$out :'])
+                     (m5_if(m5_reached(C-MEM), ['$op == 3'b000'], ['$op[1:0] == 2'b00'])) ? $sum  :
+                     (m5_if(m5_reached(C-MEM), ['$op == 3'b001'], ['$op[1:0] == 2'b01'])) ? $diff :
+                     (m5_if(m5_reached(C-MEM), ['$op == 3'b010'], ['$op[1:0] == 2'b10'])) ? $prod :
+                     m5_if(m5_reached(C-MEM), ['($op == 3'b011) ? $quot :'], m5_reached(C-VALID), ['$quot;'])
+                     m5_if(m5_reached(C-MEM), ['($op == 3'b100) ? >>2$mem : >>1$out;'])
+      m4_ifelse_block(m5_reached(C-OUT), 1, ['
+      @3
+         $digit[3:0] = $out[3:0];
+         *uo_out =
+            $digit == 4'h0 ? 8'b11000000 :
+            $digit == 4'h1 ? 8'b11111001 :
+            $digit == 4'h2 ? 8'b10100100 :
+            $digit == 4'h3 ? 8'b10110000 :
+            $digit == 4'h4 ? 8'b10011001 :
+            $digit == 4'h5 ? 8'b10010010 :
+            $digit == 4'h6 ? 8'b10000010 :
+            $digit == 4'h7 ? 8'b11111000 :
+            $digit == 4'h8 ? 8'b10000000 :
+            $digit == 4'h9 ? 8'b10010000 :
+            $digit == 4'hA ? 8'b10001000 :
+            $digit == 4'hB ? 8'b10000011 :
+            $digit == 4'hC ? 8'b11000110 :
+            $digit == 4'hD ? 8'b10100001 :
+            $digit == 4'hE ? 8'b10000110 :
+                             8'b10001110;
+      '], ['
+         *uo_out = 8'b0;
+      '])
+   m5_if(m5_MAKERCHIP, ['m4+cal_viz(@m5_OUTPUT_STAGE, /fpga)'])
    
    // ============================================================================================================
    
-   
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *top.cyc_cnt > 40;
-   *failed = 1'b0;
-   
    // Connect Tiny Tapeout outputs.
-   *uo_out = {6'b0, *failed, *passed};
-   *uio_out = 8'b0;
-   *uio_oe = 8'b0;
+   // (*uo_out connected above.)
+   m5_if_neq(m5_target, FPGA, ['*uio_out = 8'b0;'])
+   m5_if_neq(m5_target, FPGA, ['*uio_oe = 8'b0;'])
 
 \TLV cpu_solution()
-   m5_cpu_defines()
-
    m5+riscv_gen()
    m5+riscv_sum_prog()
    m5_define_hier(IMEM, m5_NUM_INSTRS)
@@ -239,35 +243,38 @@
 
       // Define the logic that will be included, based on lab ID.
       m5_lab(PC, ['Next PC
-      m5_DEBUG(NEXT_PC)
       m5_var(pc_style, 1)
       '])
       m5_var(imem_enable, 0)
       m5_lab(FETCH1, ['Fetch (part 1)
       m5_set(imem_enable, 1)
       '])
+      m5_var(fetch_enable, 0)
       m5_lab(FETCH2, ['Fetch (part 2)
-      m5_var(fetch_enable, 1)
+      m5_set(fetch_enable, 1)
       '])
 
       m5_lab(TYPE, ['Instruction Types Decode and Immediate Decode
       @1
          // Types
-         $is_i_instr = $instr[6:2] ==? 5'b0000x ||
-                       $instr[6:2] ==? 5'b001x0 ||
-                       $instr[6:2] ==? 5'b11001 ;
+         $is_i_instr = $instr[6:3] == 4'b0000 ||
+                       $instr[6:2] == 5'b00100 ||
+                       $instr[6:2] == 5'b00110 ||
+                       $instr[6:2] == 5'b11001 ;
          
-         $is_r_instr = $instr[6:2] ==? 5'b01011 ||
-                       $instr[6:2] ==? 5'b011x0 ||
-                       $instr[6:2] ==? 5'b10100 ;
+         $is_r_instr = $instr[6:2] == 5'b01011 ||
+                       $instr[6:2] == 5'b01100 ||
+                       $instr[6:2] == 5'b01110 ||
+                       $instr[6:2] == 5'b10100 ;
          
-         $is_s_instr = $instr[6:2] ==? 5'b0100x;
+         $is_s_instr = $instr[6:3] == 4'b0100;
          
-         $is_b_instr = $instr[6:2] ==? 5'b11000;
+         $is_b_instr = $instr[6:2] == 5'b11000;
          
-         $is_j_instr = $instr[6:2] ==? 5'b11011;
+         $is_j_instr = $instr[6:2] == 5'b11011;
          
-         $is_u_instr = $instr[6:2] ==? 5'b0x101;
+         $is_u_instr = $instr[6:2] == 5'b00101 ||
+                       $instr[6:2] == 5'b01101;
       '])
 
       m5_lab(IMM, ['Instruction Immediate Value Decoded
@@ -313,8 +320,10 @@
       m5_set(rf_common_rd, 1)
       '])
 
-      m5_lab(RF_RD2, ['Register File Read (part 2)
       m5_var(rf_bypass, 0)
+      m5_var(rf_rd_data, 0)
+      m5_lab(RF_RD2, ['Register File Read (part 2)
+      m5_var(rf_rd_data, 1)
       '])
 
       m5_var(alu_style, 0)
@@ -379,35 +388,35 @@
       m5_lab(ALL_INSTR, ['Complete Instruction Decode
       m5_set(decode_stage, @1)
       @1
-         $is_lui     =  $dec_bits ==? 11'bx_xxx_0110111 ;
-         $is_auipc   =  $dec_bits ==? 11'bx_xxx_0010111 ;
-         $is_jal     =  $dec_bits ==? 11'bx_xxx_1101111 ;
-         $is_jalr    =  $dec_bits ==? 11'bx_000_1100111 ;
+         $is_lui     =  $dec_bits[6:0] ==        7'b0110111 ;
+         $is_auipc   =  $dec_bits[6:0] ==        7'b0010111 ;
+         $is_jal     =  $dec_bits[6:0] ==        7'b1101111 ;
+         $is_jalr    =  $dec_bits[9:0] ==   10'b000_1100111 ;
        
-         $is_load    =  $opcode   ==  7'b0000011        ;
+         $is_load    =  $opcode        ==        7'b0000011 ;
          
-         $is_sb      =  $dec_bits ==? 11'bx_000_0100011 ;
-         $is_sh      =  $dec_bits ==? 11'bx_001_0100011 ;
-         $is_sw      =  $dec_bits ==? 11'bx_010_0100011 ;
+         //$is_sb      =  $dec_bits[9:0] ==   10'b000_0100011 ;
+         //$is_sh      =  $dec_bits[9:0] ==   10'b001_0100011 ;
+         //$is_sw      =  $dec_bits[9:0] ==   10'b010_0100011 ;
 
-         $is_slti    =  $dec_bits ==? 11'bx_010_0010011 ;
-         $is_sltiu   =  $dec_bits ==? 11'bx_011_0010011 ;
-         $is_xori    =  $dec_bits ==? 11'bx_100_0010011 ;
-         $is_ori     =  $dec_bits ==? 11'bx_110_0010011 ;
-         $is_andi    =  $dec_bits ==? 11'bx_111_0010011 ;
-         $is_slli    =  $dec_bits ==? 11'b0_001_0010011 ;
-         $is_srli    =  $dec_bits ==? 11'b0_101_0010011 ;
-         $is_srai    =  $dec_bits ==? 11'b1_101_0010011 ;
+         $is_slti    =  $dec_bits[9:0] ==   10'b010_0010011 ;
+         $is_sltiu   =  $dec_bits[9:0] ==   10'b011_0010011 ;
+         $is_xori    =  $dec_bits[9:0] ==   10'b100_0010011 ;
+         $is_ori     =  $dec_bits[9:0] ==   10'b110_0010011 ;
+         $is_andi    =  $dec_bits[9:0] ==   10'b111_0010011 ;
+         $is_slli    =  $dec_bits      == 11'b0_001_0010011 ;
+         $is_srli    =  $dec_bits      == 11'b0_101_0010011 ;
+         $is_srai    =  $dec_bits      == 11'b1_101_0010011 ;
 
-         $is_sub     =  $dec_bits ==? 11'b1_000_0110011 ;
-         $is_sll     =  $dec_bits ==? 11'b0_001_0110011 ;
-         $is_slt     =  $dec_bits ==? 11'b0_010_0110011 ;
-         $is_sltu    =  $dec_bits ==? 11'b0_011_0110011 ;
-         $is_xor     =  $dec_bits ==? 11'b0_100_0110011 ;
-         $is_srl     =  $dec_bits ==? 11'b0_101_0110011 ;
-         $is_sra     =  $dec_bits ==? 11'b1_101_0110011 ;
-         $is_or      =  $dec_bits ==? 11'b0_110_0110011 ;
-         $is_and     =  $dec_bits ==? 11'b0_111_0110011 ;
+         $is_sub     =  $dec_bits      == 11'b1_000_0110011 ;
+         $is_sll     =  $dec_bits      == 11'b0_001_0110011 ;
+         $is_slt     =  $dec_bits      == 11'b0_010_0110011 ;
+         $is_sltu    =  $dec_bits      == 11'b0_011_0110011 ;
+         $is_xor     =  $dec_bits      == 11'b0_100_0110011 ;
+         $is_srl     =  $dec_bits      == 11'b0_101_0110011 ;
+         $is_sra     =  $dec_bits      == 11'b1_101_0110011 ;
+         $is_or      =  $dec_bits      == 11'b0_110_0110011 ;
+         $is_and     =  $dec_bits      == 11'b0_111_0110011 ;
 
       '])
 
@@ -437,7 +446,7 @@
          $dmem_wr_en          = $is_s_instr && $valid;
          $dmem_wr_data[31:0]  = $src2_value;
          $dmem_rd_en          = $is_load;
-         $dmem_addr[3:0]      = $result[5:2];
+         $dmem_addr[2:0]      = $result[4:2];
 
       @5
          $ld_data[31:0]       = $dmem_rd_data;
@@ -507,7 +516,7 @@
          $imem_rd_addr[m5_IMEM_INDEX_CNT-1:0] = $pc[m5_IMEM_INDEX_CNT+1:2];
       @1
          $instr[31:0]                         = $imem_rd_data[31:0];
-         `BOGUS_USE($instr)
+         //`BOGUS_USE($instr)
       '])
 
       m4_ifelse_block(m5_fields_style, 1, ['
@@ -518,7 +527,7 @@
          $rs2[4:0]    = $instr[24:20];
          $rd[4:0]     = $instr[11:7];
          $opcode[6:0] = $instr[6:0];
-         `BOGUS_USE($funct7 $funct3 $opcode)
+         //`BOGUS_USE($funct7 $funct3 $opcode)
       '], m5_fields_style, 2, ['         // Other fields
       @1
          ?$funct7_valid
@@ -532,21 +541,21 @@
          ?$rd_valid
             $rd[4:0]     = $instr[11:7];
          $opcode[6:0]    = $instr[6:0];
-         `BOGUS_USE($funct7 $funct3 $opcode $funct3)
+         //`BOGUS_USE($funct7 $funct3 $opcode $funct3)
       '])
 
       m4_ifelse_block(m5_decode_enable, 1, ['
       m5_decode_stage
          $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
-         $is_beq     =  $dec_bits ==? 11'bx_000_1100011;
-         $is_bne     =  $dec_bits ==? 11'bx_001_1100011;
-         $is_blt     =  $dec_bits ==? 11'bx_100_1100011;
-         $is_bge     =  $dec_bits ==? 11'bx_101_1100011;
-         $is_bltu    =  $dec_bits ==? 11'bx_110_1100011;
-         $is_bgeu    =  $dec_bits ==? 11'bx_111_1100011;
+         $is_beq     =  $dec_bits[9:0] ==   10'b000_1100011 ;
+         $is_bne     =  $dec_bits[9:0] ==   10'b001_1100011 ;
+         $is_blt     =  $dec_bits[9:0] ==   10'b100_1100011 ;
+         $is_bge     =  $dec_bits[9:0] ==   10'b101_1100011 ;
+         $is_bltu    =  $dec_bits[9:0] ==   10'b110_1100011 ;
+         $is_bgeu    =  $dec_bits[9:0] ==   10'b111_1100011 ;
 
-         $is_addi    =  $dec_bits ==? 11'bx_000_0010011;
-         $is_add     =  $dec_bits ==? 11'b0_000_0110011 ;
+         $is_addi    =  $dec_bits[9:0] ==   10'b000_0010011 ;
+         $is_add     =  $dec_bits      == 11'b0_000_0110011 ;
       '])
 
       m5_rf_rd_stage
@@ -559,8 +568,10 @@
 
       m4_ifelse_block(m5_rf_enable, 1, ['
       m4_ifelse_block(m5_rf_bypass, 0, ['
+      m4_ifelse_block(m5_rf_rd_data, 1, ['
          $src1_value[31:0]    =  $rf_rd_data1;
          $src2_value[31:0]    =  $rf_rd_data2;
+      '])
       '], m5_rf_bypass, 1, ['
          $src1_value[31:0] =
               (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en
@@ -638,7 +649,7 @@
                         $is_bltu ? ($src1_value < $src2_value)  :
                         $is_bgeu ? ($src1_value >= $src2_value) :
                                    1'b0;
-         `BOGUS_USE($taken_br)
+         //`BOGUS_USE($taken_br)
       '])
 
       m4_ifelse_block(m5_valid_style, 1, ['
@@ -689,7 +700,16 @@
    // Connect Tiny Tapeout outputs.
    // Note that my_design will be under /fpga_pins/fpga.
    *uo_out = {6'b0, *failed, *passed};
-   *uio_out = 8'b0;
-   *uio_oe = 8'b0;
+   m5_if_neq(m5_target, FPGA, ['*uio_out = 8'b0;'])
+   m5_if_neq(m5_target, FPGA, ['*uio_oe = 8'b0;'])
    
-   m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic. @4 would work for all labs.
+   m5_if(m5_MAKERCHIP, ['m4+cpu_viz(@4)'])    // For visualisation, argument should be at least equal to the last stage of CPU logic. @4 would work for all labs.
+
+   
+   
+   
+   
+   
+   
+   
+   
