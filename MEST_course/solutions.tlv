@@ -45,7 +45,7 @@
    })
    
    if(m5_CalcLab, [
-      define_labs(C-SEQ, C-PIPE, C-IN, C-OUT, C-2CYC, C-VALID, C-MEM, C-EQUALS, C-TB, C-MEM2-DISABLED)
+      define_labs(C-PIPE, C-IN, C-OUT, C-2CYC, C-VALID, C-MEM, C-EQUALS, C-TB, C-MEM2-DISABLED)
       define_lab()
       set(input_labels, ['"Value[0]", "Value[1]", "Value[2]", "Value[3]", "Op[0]", "Op[1]", "Op[2]", "="'])
       
@@ -53,23 +53,7 @@
          set(ui_in_expr, ['8'b1'])
       ])
       
-      var(INPUT_STAGE, -1)
-      if(m5_reached(C-2CYC), [
-         var(INPUT_STAGE, 1)
-      ], m5_reached(C-PIPE), [
-         var(INPUT_STAGE, 1)
-      ], m5_reached(C-SEQ), [
-         var(INPUT_STAGE, 0)
-      ])
-      
-      var(OUTPUT_STAGE, -1)
-      if(m5_reached(C-2CYC), [
-         var(OUTPUT_STAGE, 2)
-      ], m5_reached(C-PIPE), [
-         var(OUTPUT_STAGE, 1)
-      ], m5_reached(C-SEQ), [
-         var(OUTPUT_STAGE, 0)
-      ])
+      var(OUTPUT_STAGE, if(m5_reached(C-2CYC), 2, 1))
    ])
    else([
       define_labs(PC, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
@@ -141,15 +125,13 @@
       m4_ifelse_block(m5_reached(C-EQUALS), 1, ['
          $equals_in = *ui_in[7];
       '])
-      @m5_INPUT_STAGE
-         m4_ifelse_block(m5_reached(C-SEQ), 1, ['
+      @1
          //$reset = *reset;
-         $val1[7:0] = >>m5_calc(m5_OUTPUT_STAGE - m5_INPUT_STAGE + 1)$out;
+         $val1[7:0] = >>m5_OUTPUT_STAGE$out;
          m5_if(m5_reached(C-IN), [''], ['$val2[31:0] = $rand2[3:0];'])
          m4_ifelse_block(m5_reached(C-VALID), 1, ['
          $valid = $reset ? 1'b0 : m5_if(m5_reached(C-EQUALS), ['$equals_in && ! >>1$equals_in'], ['>>1$valid + 1'b1']);
          $reset_or_valid = $valid || $reset;
-         '])
          '])
 
          m4_ifelse_block(m5_reached(C-MEM2-DISABLED), 1, ['
@@ -163,7 +145,7 @@
       
       m4_ifelse_block(m5_reached(C-VALID), 1, ['
       ?$reset_or_valid
-         @m5_INPUT_STAGE
+         @1
             $sum[7:0] = $val1 + $val2;
             $diff[7:0] = $val1 - $val2;
             $prod[7:0] = $val1 * $val2;
@@ -174,8 +156,8 @@
                         $valid && ($op[2:0] == 3'b101) ? m5_if(m5_reached(C-MEM2-DISABLED), ['/mem_array[$val1[2:0]]$value :'], ['$val1 :'])
                                                >>1$mem;
             '])
-      '], m5_reached(C-SEQ), 1, ['
-      @m5_INPUT_STAGE
+      '], ['
+      @1
          $sum[7:0] = $val1 + $val2;
          $diff[7:0] = $val1 - $val2;
          $prod[7:0] = $val1 * $val2;
@@ -186,7 +168,7 @@
          $cnt[7:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
       @m5_OUTPUT_STAGE
-         $out[7:0] = m5_if(m5_reached(C-SEQ),  ['$reset ? 8'b0 :'])
+         $out[7:0] = $reset ? 8'b0 :
                      m5_if(m5_reached(C-2CYC), ['! $valid ? >>1$out :'])
                      (m5_if(m5_reached(C-MEM), ['$op == 3'b000'], ['$op[1:0] == 2'b00'])) ? $sum  :
                      (m5_if(m5_reached(C-MEM), ['$op == 3'b001'], ['$op[1:0] == 2'b01'])) ? $diff :
