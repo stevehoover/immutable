@@ -53,7 +53,7 @@
          set(ui_in_expr, ['8'b1'])
       ])
       
-      var(OUTPUT_STAGE, if(m5_reached(C-2CYC), 2, 1))
+      var(OUTPUT_STAGE, m5_if(m5_reached(C-2CYC), 2, 1))
    ])
    else([
       define_labs(PC, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
