@@ -191,7 +191,7 @@
                      (m5_if(m5_reached(C-MEM), ['$op == 3'b000'], ['$op[1:0] == 2'b00'])) ? $sum  :
                      (m5_if(m5_reached(C-MEM), ['$op == 3'b001'], ['$op[1:0] == 2'b01'])) ? $diff :
                      (m5_if(m5_reached(C-MEM), ['$op == 3'b010'], ['$op[1:0] == 2'b10'])) ? $prod :
-                     m5_if(m5_reached(C-MEM), ['($op == 3'b011) ? $quot :'], m5_reached(C-VALID), ['$quot;'])
+                     m5_if(m5_reached(C-MEM), ['($op == 3'b011) ? $quot :'], ['                  $quot;'])
                      m5_if(m5_reached(C-MEM), ['($op == 3'b100) ? >>2$mem : >>1$out;'])
       m4_ifelse_block(m5_reached(C-OUT), 1, ['
       @3
