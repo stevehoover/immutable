@@ -96,7 +96,7 @@
             ld_st_lab:
                SW x10, 4(x0)   # Add SW , LW instructions to check dmem implementation
                LW x15, 4(x0)
-         ']']))
+         '])'])
          ~assemble(m5_Prog)
       })
    ])
