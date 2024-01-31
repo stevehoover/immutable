@@ -56,7 +56,7 @@
       var(OUTPUT_STAGE, m5_if(m5_reached(C-2CYC), 2, 1))
    ])
    else([
-      define_labs(PC, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
+      define_labs(PC_BROKEN, FETCH1, FETCH2, TYPE, IMM, FIELDS, FIELDS_VALID, INSTR, RF_RD, RF_RD2, ALU, RF_WR, BR1, BR2,
                   TB, 3CYC_VALID, 3CYC1, 3CYC2, RF_BYPASS, BR_VALID, ALL_INSTR, FULL_ALU, PRAGMAS, LD_REDIR, LD_DATA, DMEM, LD_ST_TB, DONE)
       define_lab()
    
@@ -92,14 +92,12 @@
             # Optional:
             #   JAL x7, 00000000000000000000  # Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
          '])
-         if(m5_reached(LD_ST_TB), m5_append_var(Prog, ['
+         if(m5_reached(LD_ST_TB), ['m5_append_var(Prog, ['
             ld_st_lab:
                SW x10, 4(x0)   # Add SW , LW instructions to check dmem implementation
                LW x15, 4(x0)
-         ']))
+         ']']))
          ~assemble(m5_Prog)
-
-         define_hier(IMEM, m5_NUM_INSTRS)
       })
    ])
 
@@ -211,6 +209,7 @@
    m5+riscv_gen()
    m5+riscv_sum_prog()
    m5_define_hier(IMEM, m5_NUM_INSTRS)
+   
    |cpu
       @0
          $reset = *reset;
@@ -224,7 +223,7 @@
 
 
       // Define the logic that will be included, based on lab ID.
-      m5_lab(PC, ['Next PC
+      m5_lab(PC_BROKEN, ['Next PC
       m5_var(pc_style, 1)
       '])
       m5_var(imem_enable, 0)
