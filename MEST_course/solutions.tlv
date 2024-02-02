@@ -2,7 +2,7 @@
 \m5
    use(m5-1.0)
    
-   nullify(m4_include_lib(https:/['']/raw.githubusercontent.com/stevehoover/MEST_Course/main/tlv_lib/m5_if(m5_CalcLab, calculator_shell_lib.tlv, risc-v_shell_lib.tlv)))
+   nullify(m4_include_lib(https:/['']/raw.githubusercontent.com/efabless/chipcraft---mest-course/main/tlv_lib/m5_if(m5_CalcLab, calculator_shell_lib.tlv, risc-v_shell_lib.tlv)))
 
    universal_var(input_labels, ['"UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED"'])
    universal_var(ui_in_expr, ['8'b0'])
