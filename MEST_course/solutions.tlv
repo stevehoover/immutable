@@ -5,7 +5,7 @@
    nullify(m4_include_lib(https:/['']/raw.githubusercontent.com/stevehoover/MEST_Course/main/tlv_lib/m5_if(m5_CalcLab, calculator_shell_lib.tlv, risc-v_shell_lib.tlv)))
 
    universal_var(input_labels, ['"UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED", "UNUSED"'])
-   universal_var(ui_in_expr, ['r[7:0]'])
+   universal_var(ui_in_expr, ['8'b0'])
    
    /Define labs.
    var(LabCnt, 0)
@@ -49,9 +49,7 @@
       define_lab()
       set(input_labels, ['"Value[0]", "Value[1]", "Value[2]", "Value[3]", "Op[0]", "Op[1]", "Op[2]", "="'])
       
-      if_eq(m5_LabId, C-OUT, [
-         set(ui_in_expr, ['8'b1'])
-      ])
+      set(ui_in_expr, if_eq(m5_LabId, C-OUT, ['8'b1'], ['r[7:0]']))
       
       var(OUTPUT_STAGE, m5_if(m5_reached(C-2CYC), 2, 1))
    ])
@@ -106,7 +104,6 @@
    m5+call(m5_if(m5_CalcLab, calc_solution, cpu_solution))
 
 \TLV calc_solution()
-   /* verilator lint_off WIDTH */
    |calc
    
       // ============================================================================================================
