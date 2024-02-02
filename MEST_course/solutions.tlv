@@ -49,7 +49,7 @@
       define_lab()
       set(input_labels, ['"Value[0]", "Value[1]", "Value[2]", "Value[3]", "Op[0]", "Op[1]", "Op[2]", "="'])
       
-      set(ui_in_expr, if_eq(m5_LabId, C-OUT, ['8'b1'], ['r[7:0]']))
+      set(ui_in_expr, m5_if_eq(m5_LabId, C-OUT, ['8'b1'], ['r[7:0]']))
       
       var(OUTPUT_STAGE, m5_if(m5_reached(C-2CYC), 2, 1))
    ])
