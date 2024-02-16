@@ -274,7 +274,7 @@
       m5_lab(FIELDS_VALID, ['Instruction Field Decode
       m5_set(fields_style, 2)
       @1
-         $funct7_valid = $is_r_instr;
+         //$funct7_valid = $is_r_instr;
          $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
          $rs1_valid    = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
          $rs2_valid    = $is_r_instr || $is_s_instr || $is_b_instr ;
@@ -499,7 +499,7 @@
 
       m4_ifelse_block(m5_fields_style, 1, ['
       @1
-         $funct7[6:0] = $instr[31:25];
+         //$funct7[6:0] = $instr[31:25];
          $funct3[2:0] = $instr[14:12];
          $rs1[4:0]    = $instr[19:15];
          $rs2[4:0]    = $instr[24:20];
@@ -508,8 +508,8 @@
          //`BOGUS_USE($funct7 $funct3 $opcode)
       '], m5_fields_style, 2, ['         // Other fields
       @1
-         ?$funct7_valid
-            $funct7[6:0] = $instr[31:25];
+         //?$funct7_valid
+         //   $funct7[6:0] = $instr[31:25];
          ?$funct3_valid
             $funct3[2:0] = $instr[14:12];
          ?$rs1_valid
@@ -524,7 +524,7 @@
 
       m4_ifelse_block(m5_decode_enable, 1, ['
       m5_decode_stage
-         $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
+         $dec_bits[10:0] = {$instr[30], $funct3, $opcode};
          $is_beq     =  $dec_bits[9:0] ==   10'b000_1100011 ;
          $is_bne     =  $dec_bits[9:0] ==   10'b001_1100011 ;
          $is_blt     =  $dec_bits[9:0] ==   10'b100_1100011 ;
