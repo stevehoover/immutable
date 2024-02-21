@@ -553,11 +553,11 @@
       '], m5_rf_bypass, 1, ['
          $src1_value[31:0] =
               (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en
-                  ?  >>1$result   :
+                  ?  >>1$rf_wr_data :
                      $rf_rd_data1 ;
          $src2_value[31:0] =
               (>>1$rf_wr_index == $rf_rd_index2) && >>1$rf_wr_en
-                  ?  >>1$result   :
+                  ?  >>1$rf_wr_data :
                      $rf_rd_data2 ;
       '])
       '])
