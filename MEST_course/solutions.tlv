@@ -45,7 +45,7 @@
    })
    
    if(m5_CalcLab, [
-      define_labs(C-PIPE, C-IN, C-OUT, C-2CYC, C-VALID, C-MEM, C-EQUALS, C-TB, C-MEM2-DISABLED)
+      define_labs(C-PIPE, C-IN, C-OUT, C-2CYC, C-VALID, C-MEM, C-EQUALS, C-TB, C-MEM2-DISABLED)  /// Note C-TB and C-MEM2-DISABLED labs are no longer part of course.
       define_lab()
       set(input_labels, ['"Value[0]", "Value[1]", "Value[2]", "Value[3]", "Op[0]", "Op[1]", "Op[2]", "="'])
       
