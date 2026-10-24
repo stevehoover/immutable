@@ -13,7 +13,7 @@
    \viz_js
       box: {width: 10, height: 10, strokeWidth: 0},
       lib: {
-         slidesUrl: "https://raw.githubusercontent.com/stevehoover/immutable/master/MYTH_workshop/myth_slides.pdf",
+         slidesUrl: "https://raw.githubusercontent.com/rweda/Makerchip-public/main/courses/MYTH%20Slides.pdf",
          // Build the full slide on PDF page `page` (box: 720x405). `build` is extractToFabric's build option.
          // Any element role named "hidden" is hidden.
          slide(viz, page, build) {
