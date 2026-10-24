@@ -584,11 +584,11 @@
    '], m4_lab_8, 1, ['
    m4+calc_slide35(/_top)
    '], m4_lab_6, 1, ['
-   m4+calc_slide25(/_top)
+   m4+calc_slide23(/_top)
    '])
 
-// Slide 25: Sequential Calculator.
-\TLV calc_slide25(/_top)
+// Slide 23: Sequential Calculator.
+\TLV calc_slide23(/_top)
    |calc
       /slide
          @M4_OUTPUT_STAGE
