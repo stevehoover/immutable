@@ -22,10 +22,10 @@ m4+definitions(['
       // Define the logic that will be included, based on slide number (specified as slide deltas between labs so editing is easier if slides are added).
 
 
-      m4_lab(23, ['Sequential Calculator
+      m4_lab(25, ['Sequential Calculator
       m4_define(['m4_lab_6'], 1)
       '])
-      m4_lab(12, ['Counter and Calculator in Pipeline
+      m4_lab(10, ['Counter and Calculator in Pipeline
       m4_define(['m4_lab_8'], 1)
       '])
       m4_lab(1, ['2-Cycle Calculator
@@ -110,6 +110,9 @@ m4+definitions(['
          $cnt[31:0] = $reset ? 1'b0 : >>1$cnt + 1'b1;'])
       '])
    m4+cal_viz(@M4_OUTPUT_STAGE)
+   /myth_lib
+      m4+myth_slides_lib(/top)
+   m4+myth_calc_slide(/top)   // Animated slide (Live Doc).
    
    // ============================================================================================================
    
