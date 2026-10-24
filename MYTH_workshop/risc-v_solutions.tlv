@@ -1,6 +1,6 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/4403846/MYTH_workshop/myth_slides_viz.tlv'])   // Live Doc slide animations (used by both RISC-V and calculator solutions).
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/immutable/33d67942837ac861e82317d2a9bc0d232b5a7a99/MYTH_workshop/myth_slides_viz.tlv'])   // Live Doc slide animations (used by both RISC-V and calculator solutions).
 
 m4+definitions(['
    m4_define(['m4_lab'], ['m4_define(['m4_slide_cnt'], m4_eval(m4_slide_cnt + $1))m4_ifelse_block(m4_eval(m4_slide_cnt <= m4_slide), 1, ['['// Lab for slide ']m4_slide_cnt[': ']$2'])'])
